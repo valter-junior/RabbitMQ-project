@@ -1,0 +1,11 @@
+2024-04-10 12:10:21.963966 -0300 -03 m=+30.038499793: Received 181211 messages in the last 30 seconds, Rate: 6040.37 msg/sec
+2024-04-10 12:10:51.964736 -0300 -03 m=+60.038478543: Received 384002 messages in the last 30 seconds, Rate: 12800.07 msg/sec
+2024-04-10 12:11:21.965332 -0300 -03 m=+90.038283085: Received 396962 messages in the last 30 seconds, Rate: 13232.07 msg/sec
+2024-04-10 12:11:51.966443 -0300 -03 m=+120.038602168: Received 335335 messages in the last 30 seconds, Rate: 11177.83 msg/sec
+2024-04-10 12:12:21.967027 -0300 -03 m=+150.038394293: Received 199497 messages in the last 30 seconds, Rate: 6649.90 msg/sec
+2024-04-10 12:12:51.968021 -0300 -03 m=+180.038596168: Received 218524 messages in the last 30 seconds, Rate: 7284.13 msg/sec
+2024-04-10 12:13:21.968671 -0300 -03 m=+210.038454668: Received 246561 messages in the last 30 seconds, Rate: 8218.70 msg/sec
+2024-04-10 12:13:51.969384 -0300 -03 m=+240.038375876: Received 217078 messages in the last 30 seconds, Rate: 7235.93 msg/sec
+2024-04-10 12:14:21.970245 -0300 -03 m=+270.038445001: Received 219147 messages in the last 30 seconds, Rate: 7304.90 msg/sec
+2024-04-10 12:14:51.971104 -0300 -03 m=+300.038512460: Received 242432 messages in the last 30 seconds, Rate: 8081.07 msg/sec
+2024-04-10 12:15:21.971716 -0300 -03 m=+330.038333001: Received 191519 messages in the last 30 seconds, Rate: 6383.97 msg/sec
