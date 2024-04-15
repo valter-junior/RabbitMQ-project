@@ -33,7 +33,7 @@ func main() {
 
 	failOnError(err, "Failed to declare a queue")
 
-	for i := 1; i <= 10000000000000000; i++ {
+	for i := 1; i <= 1000000; i++ {
 
 		body := fmt.Sprintf("The queue - Message %d", i)
 
@@ -54,7 +54,7 @@ func main() {
 
 	}
 
-	finalBody := "The queen - Final message"
+	finalBody := "The queue - Final message"
 
 	log.Printf(" [x] Sent %s", finalBody)
 }
