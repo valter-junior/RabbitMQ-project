@@ -11,8 +11,7 @@ import (
 )
 
 var (
-	mu           sync.Mutex
-	pfc          = 1
+	pfc          = 0
 	messageCount = 0
 )
 
@@ -61,7 +60,7 @@ func main() {
 
 	go func() {
 		for range time.Tick(30 * time.Second) {
-			file, err := os.OpenFile("message_count_new_3.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			file, err := os.OpenFile("message_count.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 			failOnError(err, "Failed to open file")
 
 			_, err = file.WriteString(fmt.Sprintf("%v: Received %d messages in the last 30 seconds, Rate: %.2f msg/sec\n", time.Now(), messageCount, float64(messageCount)/30.0))
@@ -72,12 +71,6 @@ func main() {
 
 			log.Printf("Messages processed: %d", messageCount)
 			messageCount = 0
-
-			mu.Lock()
-			pfc++
-			err = ch.Qos(pfc, 0, true)
-			failOnError(err, "Failed to set QoS")
-			mu.Unlock()
 
 		}
 
