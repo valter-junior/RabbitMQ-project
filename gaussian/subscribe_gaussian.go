@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	//pfc              = 50
 	messageCount     = 0
 	firstMessageTime = time.Now().Truncate(time.Second)
 	lastMessageTime  = time.Now().Truncate(time.Second)
@@ -43,15 +42,10 @@ func gaussianMembership(x, mu, sigma float64) float64 {
 	return math.Exp(-math.Pow(x-mu, 2) / (2 * math.Pow(sigma, 2)))
 }
 
-/*func calculateSigma(currentPeak, nextPeak float64) float64 {
-	midpoint := (currentPeak + nextPeak) / 2
-	return math.Abs(currentPeak-midpoint) / math.Sqrt(-2*math.Log(0.5))
-}*/
-
 func calculateSigma(currentPeak, nextPeak float64) float64 {
-	const sqrtLog2 = 1 //1.1774100225154747 // Pre-calculated value for efficiency
+	const factor = 1 //1.1774100225154747 // Pre-calculated value for efficiency
 	midpoint := (currentPeak + nextPeak) / 2
-	return math.Abs(currentPeak-midpoint) / sqrtLog2
+	return math.Abs(currentPeak-midpoint) / factor
 }
 
 func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
@@ -116,70 +110,6 @@ func fuzzyficationOutput(n float64) map[string]float64 {
 	return r
 }
 
-/*func applyRules(e map[string]float64) ([]float64, []float64) {
-
-	mx := []float64{}
-	output := []float64{}
-
-	// Rule 1:  IF e = LARGEPOSITIVE THEN output = LARGEINCREASE
-	eR := e[LARGEPOSITIVE]
-
-	m1 := eR
-	o1 := getMaxOutput(LARGEINCREASE)
-	mx = append(mx, m1)
-	output = append(output, o1)
-
-	// Rule 2:  IF e = MEDIUMPOSITIVE THEN output = LARGEINCREASE
-	eR = e[MEDIUMPOSITIVE]
-
-	m2 := eR
-	o2 := getMaxOutput(LARGEINCREASE)
-	mx = append(mx, m2)
-	output = append(output, o2)
-
-	// Rule 3:  IF e = SMALLPOSITIVE THEN output = SMALLINCREASE
-	eR = e[SMALLPOSITIVE]
-
-	m3 := eR
-	o3 := getMaxOutput(SMALLINCREASE)
-	mx = append(mx, m3)
-	output = append(output, o3)
-
-	// Rule 4:  IF e = ZE THEN output = MAINTAIN
-	eR = e[ZERO]
-
-	m4 := eR
-	o4 := getMaxOutput(MAINTAIN)
-	mx = append(mx, m4)
-	output = append(output, o4)
-
-	// Rule 5:  IF e = SN THEN output = SMALLPC
-	eR = e[SMALLNEGATIVE]
-
-	m5 := eR
-	o5 := getMaxOutput(SMALLDECREASE)
-	mx = append(mx, m5)
-	output = append(output, o5)
-
-	// Rule 6:  IF e = LN THEN output = LARGEPC
-	eR = e[MEDIUMNEGATIVE]
-
-	m6 := eR
-	o6 := getMaxOutput(LARGEDECREASE)
-	mx = append(mx, m6)
-	output = append(output, o6)
-
-	// Rule 7:  IF e = EXTREMELYNEGATIVE THEN output = LARGEDECREASE
-	eR = e[LARGENEGATIVE]
-
-	m7 := eR
-	o7 := getMaxOutput(LARGEDECREASE)
-	mx = append(mx, m7)
-	output = append(output, o7)
-
-	return mx, output
-}*/
-
 func applyRules(e map[string]float64) ([]float64, []float64) {
 	mx := []float64{}
 	output := []float64{}
@@ -229,21 +159,6 @@ func applyRules(e map[string]float64) ([]float64, []float64) {
 	return mx, output
 }
 
-/*func getMaxOutput(s string) float64 {
-	r := 0.0
-	max := -20000.0
-
-	for i := -4.0; i <= 5.0; i += 1.0 {
-		v := fuzzyficationOutput(i)
-
-		if v[s] > max {
-			max = v[s]
-			r = i
-		}
-	}
-	return r
-}*/
-
 func getMaxOutput(s string) float64 {
 	r := 0.0
 	max := -20000.0 // Initialize to a sufficiently low number to ensure any higher value is chosen.
@@ -258,24 +173,6 @@ func getMaxOutput(s string) float64 {
 	}
 	return r
 }
-
-/*func centroidDeffuzification(mx, output []float64) float64 {
-
-	numerator := 0.0
-	denominator := 0.0
-
-	for i := 0; i < len(mx); i++ {
-		numerator = numerator + mx[i]*output[i]
-		denominator = denominator + mx[i]
-	}
-	u := 0.0
-	if denominator == 0 {
-		u = 1
-	} else {
-		u = numerator / denominator
-	}
-	return u
-}*/
 
 func centroidDeffuzification(mx, output, importanceFactors []float64) float64 {
 	numerator, denominator := 0.0, 0.0
@@ -413,22 +310,3 @@ func main() {
 	<-forever
 
 }
-
-/*func logStats() {
-
-	duration := int(lastMessageTime.Sub(firstMessageTime).Seconds())
-
-	file, err := os.OpenFile("message_count.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	failOnError(err, "Failed to open file")
-
-	_, err = file.WriteString(fmt.Sprintf("%v: Received %d messages in %d, Rate: %.2f msg/sec\n", lastMessageTime, messageCount, duration, float64(messageCount)/float64(duration)))
-	failOnError(err, "Failed to write to file")
-
-	err = file.Close()
-	failOnError(err, "Failed to close file")
-
-	log.Printf("Messages processed: %d", messageCount)
-	messageCount = 0
-	firstMessageTime = lastMessageTime
-
-}*/
