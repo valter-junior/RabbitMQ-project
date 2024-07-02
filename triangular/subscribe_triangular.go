@@ -4,32 +4,43 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/streadway/amqp"
 )
 
 var (
-	messageCount     = 0
-	firstMessageTime = time.Now().Truncate(time.Second)
-	lastMessageTime  = time.Now().Truncate(time.Second)
+	messageCount = 0
+	//firstMessageTime = time.Now().Truncate(time.Second)
+	//lastMessageTime  = time.Now().Truncate(time.Second)
 )
 
 const (
-	LARGENEGATIVE  = "LN" // Large Negative
-	MEDIUMNEGATIVE = "MN" // Medium Negative
-	SMALLNEGATIVE  = "SN" // Small Negative
-	ZERO           = "ZE" // Zero
-	SMALLPOSITIVE  = "SP" // Small Positive
-	MEDIUMPOSITIVE = "MP" // Medium Positive
-	LARGEPOSITIVE  = "LP" // Large Positive
+	VeryLargeNegative = "VLN"
+	LargeNegative     = "LN"
+	MediumNegative    = "MN"
+	SmallNegative     = "SN"
+	VerySmallNegative = "VSN"
+	Zero              = "ZE"
+	VerySmallPositive = "VSP"
+	SmallPositive     = "SP"
+	MediumPositive    = "MP"
+	LargePositive     = "LP"
+	VeryLargePositive = "VLP"
 
-	LARGEINCREASE = "LI"       // Large Positive
-	SMALLINCREASE = "SI"       // Small Positive
-	MAINTAIN      = "MAINTAIN" // Zero
-	SMALLDECREASE = "SD"       // Small Negative
-	LARGEDECREASE = "LD"       // Large Negative
-
+	VeryLargeDecrease = "VLD"
+	LargeDecrease     = "LD"
+	MediumDecrease    = "MD"
+	SmallDecrease     = "SD"
+	VerySmallDecrease = "VSD"
+	Maintain          = "MAINTAIN"
+	VerySmallIncrease = "VSI"
+	SmallIncrease     = "SI"
+	MediumIncrease    = "MI"
+	LargeIncrease     = "LI"
+	VeryLargeIncrease = "VLI"
 )
 
 func failOnError(err error, msg string) {
@@ -44,25 +55,38 @@ func triangularMF(x float64, a float64, b float64, c float64) float64 {
 
 func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
-	fuzzy[LARGENEGATIVE] = triangularMF(msgSec, -20000, -10000, -2500)
-	fuzzy[MEDIUMNEGATIVE] = triangularMF(msgSec, -5000, -2500, 0)
-	fuzzy[SMALLNEGATIVE] = triangularMF(msgSec, -1500, -500, 0)
-	fuzzy[ZERO] = triangularMF(msgSec, -250, 0, 250)
-	fuzzy[SMALLPOSITIVE] = triangularMF(msgSec, 0, 500, 1500)
-	fuzzy[MEDIUMPOSITIVE] = triangularMF(msgSec, 0, 2500, 5000)
-	fuzzy[LARGEPOSITIVE] = triangularMF(msgSec, 2500, 10000, 20000)
+
+	// Define the overlaps and categories in the range -15000 to 15000
+	fuzzy["VLN"] = triangularMF(msgSec, -15000, -15000, -12000) // Start of the range to -12000
+	fuzzy["LN"] = triangularMF(msgSec, -13500, -12000, -9000)   // Overlapping midpoint at -12000
+	fuzzy["MN"] = triangularMF(msgSec, -10500, -9000, -6000)    // Overlapping midpoint at -9000
+	fuzzy["SN"] = triangularMF(msgSec, -7500, -6000, -3000)     // Overlapping midpoint at -6000
+	fuzzy["VSN"] = triangularMF(msgSec, -4500, -3000, 0)        // Overlapping midpoint at -3000
+	fuzzy["ZE"] = triangularMF(msgSec, -1500, 0, 1500)          // Center at 0
+	fuzzy["VSP"] = triangularMF(msgSec, 0, 3000, 4500)          // Overlapping midpoint at 3000
+	fuzzy["SP"] = triangularMF(msgSec, 3000, 6000, 7500)        // Overlapping midpoint at 6000
+	fuzzy["MP"] = triangularMF(msgSec, 6000, 9000, 10500)       // Overlapping midpoint at 9000
+	fuzzy["LP"] = triangularMF(msgSec, 9000, 12000, 13500)      // Overlapping midpoint at 12000
+	fuzzy["VLP"] = triangularMF(msgSec, 12000, 15000, 15000)    // End of the range starting from 12000
+
 	return fuzzy
 }
 
 func fuzzyficationOutput(n float64) map[string]float64 {
-
 	r := map[string]float64{}
 
-	r[LARGEINCREASE] = triangularMF(n, 2.0, 3.0, 4.0)
-	r[SMALLINCREASE] = triangularMF(n, 1.0, 2.0, 3.0)
-	r[MAINTAIN] = triangularMF(n, -1.0, 0.0, 1.0)
-	r[SMALLDECREASE] = triangularMF(n, -3.0, -2.0, -1.0)
-	r[LARGEDECREASE] = triangularMF(n, -4.0, -3.0, -2.0)
+	// Extend and adjust the categories to fit the new range of -8 to 8
+	r["VLD"] = triangularMF(n, -8, -7, -6) // New category for broader range
+	r["LD"] = triangularMF(n, -7, -6, -5)
+	r["MD"] = triangularMF(n, -6, -5, -4)
+	r["SD"] = triangularMF(n, -5, -4, -3)
+	r["VSD"] = triangularMF(n, -4, -3, -2) // Added for smooth transition
+	r["MAINTAIN"] = triangularMF(n, -1, 0, 1)
+	r["VSI"] = triangularMF(n, 2, 3, 4) // Added for smooth transition
+	r["SI"] = triangularMF(n, 3, 4, 5)
+	r["MI"] = triangularMF(n, 4, 5, 6)
+	r["LI"] = triangularMF(n, 5, 6, 7)
+	r["VLI"] = triangularMF(n, 6, 7, 8) // New category for broader range
 
 	return r
 }
@@ -71,47 +95,27 @@ func applyRules(e map[string]float64) ([]float64, []float64) {
 	mx := []float64{}
 	output := []float64{}
 
-	// Rule 1: IF e = LARGEPOSITIVE THEN output = LARGEINCREASE
-	m1 := e[LARGEPOSITIVE]
-	o1 := getMaxOutput(LARGEINCREASE)
-	mx = append(mx, m1)
-	output = append(output, o1)
+	rules := []struct {
+		Condition string
+		Result    string
+	}{
+		{VeryLargeNegative, VeryLargeDecrease},
+		{LargeNegative, LargeDecrease},
+		{MediumNegative, MediumDecrease},
+		{SmallNegative, SmallDecrease},
+		{VerySmallNegative, VerySmallDecrease},
+		{Zero, Maintain},
+		{VerySmallPositive, VerySmallIncrease},
+		{SmallPositive, SmallIncrease},
+		{MediumPositive, MediumIncrease},
+		{LargePositive, LargeIncrease},
+		{VeryLargePositive, VeryLargeIncrease},
+	}
 
-	// Rule 2: IF e = MEDIUMPOSITIVE THEN output = LARGEINCREASE
-	m2 := e[MEDIUMPOSITIVE]
-	o2 := getMaxOutput(LARGEINCREASE)
-	mx = append(mx, m2)
-	output = append(output, o2)
-
-	// Rule 3: IF e = SMALLPOSITIVE THEN output = SMALLINCREASE
-	m3 := e[SMALLPOSITIVE]
-	o3 := getMaxOutput(SMALLINCREASE)
-	mx = append(mx, m3)
-	output = append(output, o3)
-
-	// Rule 4: IF e = ZERO THEN output = MAINTAIN
-	m4 := e[ZERO]
-	o4 := getMaxOutput(MAINTAIN)
-	mx = append(mx, m4)
-	output = append(output, o4)
-
-	// Rule 5: IF e = SMALLNEGATIVE THEN output = SMALLDECREASE
-	m5 := e[SMALLNEGATIVE]
-	o5 := getMaxOutput(SMALLDECREASE)
-	mx = append(mx, m5)
-	output = append(output, o5)
-
-	// Rule 6: IF e = MEDIUMNEGATIVE THEN output = LARGEDECREASE
-	m6 := e[MEDIUMNEGATIVE]
-	o6 := getMaxOutput(LARGEDECREASE)
-	mx = append(mx, m6)
-	output = append(output, o6)
-
-	// Rule 7: IF e = LARGENEGATIVE THEN output = LARGEDECREASE
-	m7 := e[LARGENEGATIVE]
-	o7 := getMaxOutput(LARGEDECREASE)
-	mx = append(mx, m7)
-	output = append(output, o7)
+	for _, rule := range rules {
+		mx = append(mx, e[rule.Condition])
+		output = append(output, getMaxOutput(rule.Result))
+	}
 
 	return mx, output
 }
@@ -120,7 +124,7 @@ func getMaxOutput(s string) float64 {
 	r := 0.0
 	max := -20000.0 // Initialize to a sufficiently low number to ensure any higher value is chosen.
 
-	for i := -4.0; i <= 4.0; i += 0.5 { // Decreased step size for more precision
+	for i := -8.0; i <= 8.0; i += 0.5 { // Decreased step size for more precision
 		v := fuzzyficationOutput(i)
 
 		if v[s] > max {
@@ -131,20 +135,18 @@ func getMaxOutput(s string) float64 {
 	return r
 }
 
-func centroidDeffuzification(mx, output, importanceFactors []float64) float64 {
+func centroidDefuzzification(mx, output []float64) float64 {
 	numerator, denominator := 0.0, 0.0
 
-	for i := 0; i < len(mx); i++ {
-		adjustedOutput := output[i] * importanceFactors[i]
-		numerator += mx[i] * adjustedOutput
-		denominator += mx[i]
-		fmt.Printf("Membership: %.4f, Adjusted Output: %.4f, Product: %.4f\n", mx[i], adjustedOutput, mx[i]*adjustedOutput)
+	for i, m := range mx {
+		adjustedOutput := output[i] * m
+		numerator += adjustedOutput
+		denominator += m // Adjust by importance factors
 	}
 
-	fmt.Printf("Numerator: %.4f, Denominator: %.4f\n", numerator, denominator)
 	if denominator == 0 {
-		fmt.Println("Warning: Denominator is zero, defaulting output to 1")
-		return 1 // You may choose a different default behavior
+		log.Println("Warning: Denominator is zero, defaulting output to 0")
+		return 0
 	}
 	return numerator / denominator
 }
@@ -165,14 +167,15 @@ func Result(p ...float64) float64 {
 	mx, output := applyRules(fuzzifiedSetError)
 
 	// Deffuzification
-	importanceFactors := []float64{1.5, 1.5, 1.0, 1.0, 0.5, 0.5, 0.3}
-	u := centroidDeffuzification(mx, output, importanceFactors)
+	//importanceFactors := []float64{1.5, 1.5, 1.0, 1.0, 0.5, 0.5, 0.3}
+	u := centroidDefuzzification(mx, output)
 
 	fmt.Printf("Fuzzy Controller: %.2f\n", u)
 	return u
 }
 
 func main() {
+	prefetchValue := 1
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -181,8 +184,13 @@ func main() {
 	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
-	err = ch.Qos(5, 0, true)
-	failOnError(err, "Failed to set QoS")
+	fmt.Println("Enter the prefetch value: ", prefetchValue)
+
+	if prefetchValue == 1 {
+		err = ch.Qos(prefetchValue, 0, true)
+		failOnError(err, "Failed to set QoS")
+
+	}
 
 	q, err := ch.QueueDeclare(
 		"task_queue", // name
@@ -192,7 +200,6 @@ func main() {
 		false,        // no-wait
 		nil,          // arguments
 	)
-
 	failOnError(err, "Failed to declare a queue")
 
 	msg, err := ch.Consume(
@@ -204,66 +211,77 @@ func main() {
 		false,  // no-wait
 		nil,    // args
 	)
-
 	failOnError(err, "Failed to register a consumer")
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
+
+	gols := 10000
+	tickerGols := time.NewTicker(900 * time.Second)
+	defer tickerGols.Stop()
 
 	messageReceived := make(chan bool)
 
-	go func() {
+	file, err := os.OpenFile("message_rate_triangular_1.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
+	go func() {
 		for d := range msg {
+			err := d.Ack(false)
 			log.Printf("Received a message: %s", d.Body)
 			messageCount++
-			lastMessageTime = time.Now().Truncate(time.Second)
+
 			messageReceived <- true
-			err := d.Ack(false)
+
 			failOnError(err, "Failed to acknowledge message")
 		}
-
 	}()
 
 	go func() {
-
 		for {
+
 			select {
+
 			case <-ticker.C:
-				if time.Since(lastMessageTime) > 10*time.Second && messageCount > 0 {
 
-					log.Printf("firstMessageTime: %v", firstMessageTime)
-					log.Printf("lastMessageTime: %v", lastMessageTime)
-					duration := int(lastMessageTime.Sub(firstMessageTime).Seconds())
-					log.Printf("Messages processed: %d", messageCount)
-					log.Printf("Duration: %d", duration)
+				if messageCount > 0 {
+					rate := float64(messageCount) / 30
+					rateAdjust := Result(float64(gols), rate)
 
-					rate := float64(messageCount) / float64(duration)
-
-					log.Printf("Rate: %.2f msg/sec", rate)
-					Result(10000, float64(rate))
-
-					if duration == 0 {
-						continue
+					if _, err := file.WriteString(time.Now().Format("2006-01-02 15:04:05") + " - Messages: " + strconv.Itoa(messageCount) + ", Rate: " + fmt.Sprintf("%.2f", rate) + " msg/sec, Prefetch: " + strconv.Itoa(prefetchValue) + " - " + "Prefetch valur adjust: " + strconv.Itoa(int(rateAdjust)) + " - " + "Goal: " + strconv.Itoa(gols) + "\n"); err != nil {
+						log.Fatal(err)
 					}
-
+					//int(rateAdjust)
+					prefetchValue += int(rateAdjust)
+					log.Printf("Messages processed in the last 10 seconds: %d", messageCount)
+					log.Printf("Current prefetch value: %d", prefetchValue)
+					// Escrever no arquivo
 					messageCount = 0
-					duration = 0
-					firstMessageTime = time.Time{}
-
+					err = ch.Qos(prefetchValue, 0, true)
+					failOnError(err, "Failed to set QoS")
 				}
 			case <-messageReceived:
-				if firstMessageTime.IsZero() {
-					firstMessageTime = time.Now().Truncate(time.Second)
+
+			case <-tickerGols.C:
+				if gols > 15000 && gols < 17000 {
+					gols = int(gols / 2)
+				} else if gols > 25000 && gols < 28000 {
+
+					gols -= 10000
+
+				} else {
+					gols += 4000
 				}
+
 			}
 		}
-
 	}()
 
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	log.Println(" [*] Waiting for messages. To exit press CTRL+C")
 	forever := make(chan bool)
-
 	<-forever
 
 }

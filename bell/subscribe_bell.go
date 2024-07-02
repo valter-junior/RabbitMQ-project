@@ -1,21 +1,25 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"math"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/streadway/amqp"
 )
 
 var (
-	messageCount     int
-	firstMessageTime time.Time
-	lastMessageTime  time.Time
+	messageCount int
+	//firstMessageTime time.Time
+	//lastMessageTime  time.Time
+
 )
 
 const (
-	LargeNegative  = "LN"
+	/*LargeNegative  = "LN"
 	MediumNegative = "MN"
 	SmallNegative  = "SN"
 	Zero           = "ZE"
@@ -23,11 +27,37 @@ const (
 	MediumPositive = "MP"
 	LargePositive  = "LP"
 
-	LargeIncrease = "LI"
-	SmallIncrease = "SI"
-	Maintain      = "MAINTAIN"
-	SmallDecrease = "SD"
-	LargeDecrease = "LD"
+	LargeIncrease  = "LI"
+	MediumIncrease = "MI"
+	SmallIncrease  = "SI"
+	Maintain       = "MAINTAIN"
+	MediumDecrease = "MD"
+	SmallDecrease  = "SD"
+	LargeDecrease  = "LD"*/
+
+	VeryLargeNegative = "VLN"
+	LargeNegative     = "LN"
+	MediumNegative    = "MN"
+	SmallNegative     = "SN"
+	VerySmallNegative = "VSN"
+	Zero              = "ZE"
+	VerySmallPositive = "VSP"
+	SmallPositive     = "SP"
+	MediumPositive    = "MP"
+	LargePositive     = "LP"
+	VeryLargePositive = "VLP"
+
+	VeryLargeDecrease = "VLD"
+	LargeDecrease     = "LD"
+	MediumDecrease    = "MD"
+	SmallDecrease     = "SD"
+	VerySmallDecrease = "VSD"
+	Maintain          = "MAINTAIN"
+	VerySmallIncrease = "VSI"
+	SmallIncrease     = "SI"
+	MediumIncrease    = "MI"
+	LargeIncrease     = "LI"
+	VeryLargeIncrease = "VLI"
 )
 
 func failOnError(err error, msg string) {
@@ -42,43 +72,46 @@ func GeneralizedBellMembership(x, a, b, c float64) float64 {
 
 func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
-	a := 650.0
-	b := 0.87
 
-	centers := map[string]float64{
-		LargeNegative:  -10000,
-		MediumNegative: -2500,
-		SmallNegative:  -500,
-		Zero:           0,
-		SmallPositive:  500,
-		MediumPositive: 2500,
-		LargePositive:  10000,
+	centers := map[string]struct{ a, b, c float64 }{
+		VeryLargeNegative: {4000, 2, -15000},
+		LargeNegative:     {3000, 2, -10000},
+		MediumNegative:    {2000, 2, -5000},
+		SmallNegative:     {1000, 2, -2500},
+		VerySmallNegative: {500, 2, -1250},
+		Zero:              {250, 2, 0},
+		VerySmallPositive: {500, 2, 1250},
+		SmallPositive:     {1000, 2, 2500},
+		MediumPositive:    {2000, 2, 5000},
+		LargePositive:     {3000, 2, 10000},
+		VeryLargePositive: {4000, 2, 15000},
 	}
 
-	for label, c := range centers {
-		fuzzy[label] = GeneralizedBellMembership(msgSec, a, b, c)
+	for label, params := range centers {
+		fuzzy[label] = GeneralizedBellMembership(msgSec, params.a, params.b, params.c)
 	}
-
 	return fuzzy
 }
 
 func fuzzyficationOutput(x float64) map[string]float64 {
 	result := make(map[string]float64)
-	a, b := 2.0, 2.0
-	cValues := map[string]float64{
-		LargeDecrease: -4.0,
-		SmallDecrease: -2.0,
-		Maintain:      0.0,
-		SmallIncrease: 2.0,
-		LargeIncrease: 4.0,
+
+	cValues := map[string]struct{ a, b, c float64 }{
+		VeryLargeDecrease: {4.0, 2.0, -8}, // Equivalente a VeryLargeNegative
+		LargeDecrease:     {3.5, 2.0, -6}, // Equivalente a LargeNegative
+		MediumDecrease:    {3.0, 2.0, -4}, // Equivalente a MediumNegative
+		SmallDecrease:     {2.5, 2.0, -2}, // Equivalente a SmallNegative
+		VerySmallDecrease: {2.0, 2.0, -1}, // Equivalente a VerySmallNegative
+		Maintain:          {1.5, 2.0, 0},  // Equivalente a Zero
+		VerySmallIncrease: {2.0, 2.0, 1},  // Equivalente a VerySmallPositive
+		SmallIncrease:     {2.5, 2.0, 2},  // Equivalente a SmallPositive
+		MediumIncrease:    {3.0, 2.0, 4},  // Equivalente a MediumPositive
+		LargeIncrease:     {3.5, 2.0, 6},  // Equivalente a LargePositive
+		VeryLargeIncrease: {4.0, 2.0, 8},
 	}
 
-	for label, c := range cValues {
-		width := a
-		if label == Maintain {
-			width = 0.5 // Narrower for Maintain
-		}
-		result[label] = GeneralizedBellMembership(x, width, b, c)
+	for label, params := range cValues {
+		result[label] = GeneralizedBellMembership(x, params.a, params.b, params.c)
 	}
 
 	return result
@@ -92,13 +125,17 @@ func applyRules(e map[string]float64) ([]float64, []float64) {
 		Condition string
 		Result    string
 	}{
-		{LargePositive, LargeIncrease},
-		{MediumPositive, LargeIncrease},
-		{SmallPositive, SmallIncrease},
-		{Zero, Maintain},
-		{SmallNegative, SmallDecrease},
-		{MediumNegative, LargeDecrease},
+		{VeryLargeNegative, VeryLargeDecrease},
 		{LargeNegative, LargeDecrease},
+		{MediumNegative, MediumDecrease},
+		{SmallNegative, SmallDecrease},
+		{VerySmallNegative, VerySmallDecrease},
+		{Zero, Maintain},
+		{VerySmallPositive, VerySmallIncrease},
+		{SmallPositive, SmallIncrease},
+		{MediumPositive, MediumIncrease},
+		{LargePositive, LargeIncrease},
+		{VeryLargePositive, VeryLargeIncrease},
 	}
 
 	for _, rule := range rules {
@@ -113,7 +150,7 @@ func getMaxOutput(s string) float64 {
 	r := 0.0
 	max := -20000.0 // Initialize to a sufficiently low number to ensure any higher value is chosen.
 
-	for i := -4.0; i <= 4.0; i += 0.5 { // Decreased step size for more precision
+	for i := -8.0; i <= 8.0; i += 0.5 { // Decreased step size for more precision
 		v := fuzzyficationOutput(i)
 
 		if v[s] > max {
@@ -156,6 +193,7 @@ func Result(p ...float64) float64 {
 }
 
 func main() {
+	prefetchValue := 1
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -164,8 +202,13 @@ func main() {
 	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
-	err = ch.Qos(14, 0, true)
-	failOnError(err, "Failed to set QoS")
+	fmt.Println("Enter the prefetch value: ", prefetchValue)
+
+	if prefetchValue == 1 {
+		err = ch.Qos(prefetchValue, 0, true)
+		failOnError(err, "Failed to set QoS")
+
+	}
 
 	q, err := ch.QueueDeclare(
 		"task_queue", // name
@@ -188,45 +231,69 @@ func main() {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
+
+	gols := 10000
+	tickerGols := time.NewTicker(900 * time.Second)
+	defer tickerGols.Stop()
 
 	messageReceived := make(chan bool)
 
+	file, err := os.OpenFile("message_rate_bell_1.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
 	go func() {
 		for d := range msg {
+			err := d.Ack(false)
 			log.Printf("Received a message: %s", d.Body)
 			messageCount++
-			lastMessageTime = time.Now().Truncate(time.Second)
+
 			messageReceived <- true
-			err := d.Ack(false)
+
 			failOnError(err, "Failed to acknowledge message")
 		}
 	}()
 
 	go func() {
 		for {
-			select {
-			case <-ticker.C:
-				if time.Since(lastMessageTime) > 10*time.Second && messageCount > 0 {
-					log.Printf("firstMessageTime: %v", firstMessageTime)
-					log.Printf("lastMessageTime: %v", lastMessageTime)
-					duration := int(lastMessageTime.Sub(firstMessageTime).Seconds())
-					log.Printf("Messages processed: %d", messageCount)
-					log.Printf("Duration: %d", duration)
 
-					if duration > 0 {
-						rate := float64(messageCount) / float64(duration)
-						log.Printf("Rate: %.2f msg/sec", rate)
-						Result(30000, rate)
+			select {
+
+			case <-ticker.C:
+
+				if messageCount > 0 {
+					rate := float64(messageCount) / 30
+					rateAdjust := Result(float64(gols), rate)
+
+					if _, err := file.WriteString(time.Now().Format("2006-01-02 15:04:05") + " - Messages: " + strconv.Itoa(messageCount) + ", Rate: " + fmt.Sprintf("%.2f", rate) + " msg/sec, Prefetch: " + strconv.Itoa(prefetchValue) + " - " + "Prefetch valur adjust: " + strconv.Itoa(int(rateAdjust)) + " - " + "Goal: " + strconv.Itoa(gols) + "\n"); err != nil {
+						log.Fatal(err)
 					}
+					//int(rateAdjust)
+					prefetchValue += int(rateAdjust)
+					log.Printf("Messages processed in the last 10 seconds: %d", messageCount)
+					log.Printf("Current prefetch value: %d", prefetchValue)
+					// Escrever no arquivo
 					messageCount = 0
-					firstMessageTime = time.Time{}
+					err = ch.Qos(prefetchValue, 0, true)
+					failOnError(err, "Failed to set QoS")
 				}
 			case <-messageReceived:
-				if firstMessageTime.IsZero() {
-					firstMessageTime = time.Now().Truncate(time.Second)
+
+			case <-tickerGols.C:
+				if gols > 15000 && gols < 17000 {
+					gols = int(gols / 2)
+				} else if gols > 25000 && gols < 28000 {
+
+					gols -= 10000
+
+				} else {
+					gols += 4000
 				}
+
 			}
 		}
 	}()

@@ -4,32 +4,49 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/streadway/amqp"
 )
 
 var (
-	messageCount     = 0
-	firstMessageTime = time.Now().Truncate(time.Second)
-	lastMessageTime  = time.Now().Truncate(time.Second)
+	messageCount = 0
+	//firstMessageTime = time.Now().Truncate(time.Second)
+	//lastMessageTime  = time.Now().Truncate(time.Second)
 )
 
 const (
-	LARGENEGATIVE  = "LN" // Large Negative
-	MEDIUMNEGATIVE = "MN" // Medium Negative
-	SMALLNEGATIVE  = "SN" // Small Negative
-	ZERO           = "ZE" // Zero
-	SMALLPOSITIVE  = "SP" // Small Positive
-	MEDIUMPOSITIVE = "MP" // Medium Positive
-	LARGEPOSITIVE  = "LP" // Large Positive
+	VeryLargeNegative = "VLN"
+	LargeNegative     = "LN"
+	MediumNegative    = "MN"
+	SmallNegative     = "SN"
+	VerySmallNegative = "VSN"
+	Zero              = "ZE"
+	VerySmallPositive = "VSP"
+	SmallPositive     = "SP"
+	MediumPositive    = "MP"
+	LargePositive     = "LP"
+	VeryLargePositive = "VLP"
 
-	LARGEINCREASE = "LI"       // Large Positive
-	SMALLINCREASE = "SI"       // Small Positive
-	MAINTAIN      = "MAINTAIN" // Zero
-	SMALLDECREASE = "SD"       // Small Negative
-	LARGEDECREASE = "LD"       // Large Negative
+	VeryLargeDecrease = "VLD"
+	LargeDecrease     = "LD"
+	MediumDecrease    = "MD"
+	SmallDecrease     = "SD"
+	VerySmallDecrease = "VSD"
+	Maintain          = "MAINTAIN"
+	VerySmallIncrease = "VSI"
+	SmallIncrease     = "SI"
+	MediumIncrease    = "MI"
+	LargeIncrease     = "LI"
+	VeryLargeIncrease = "VLI"
 
+	/*LargeIncrease = "LI"
+	SmallIncrease = "SI"
+	Maintain      = "MAINTAIN"
+	SmallDecrease = "SD"
+	LargeDecrease = "LD"*/
 )
 
 func failOnError(err error, msg string) {
@@ -37,44 +54,60 @@ func failOnError(err error, msg string) {
 		log.Fatalf("%s: %s", msg, err)
 	}
 }
-
 func gaussianMembership(x, mu, sigma float64) float64 {
+	if sigma == 0 {
+		if x == mu {
+			return 1.0 // Perfect match
+		}
+		return 0.0 // No match
+	}
 	return math.Exp(-math.Pow(x-mu, 2) / (2 * math.Pow(sigma, 2)))
 }
 
-func calculateSigma(currentPeak, nextPeak float64) float64 {
-	const factor = 1 //1.1774100225154747 // Pre-calculated value for efficiency
+/*func calculateSigma(currentPeak, nextPeak float64) float64 {
+
 	midpoint := (currentPeak + nextPeak) / 2
-	return math.Abs(currentPeak-midpoint) / factor
+	return math.Abs(currentPeak - midpoint)
+}*/
+
+func calculateSigma(leftPeak, rightPeak float64) float64 {
+	return math.Abs(rightPeak-leftPeak) / 2
 }
 
 func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
+	fuzzy := make(map[string]float64)
 
 	peaks := []float64{
-		-20000, // Large Negative
-		-10000, // Start of next category after Large Negative
-		-2500,  // Medium Negative
-		-500,   // Small Negative
-		0,      // Zero
-		500,    // Small Positive
-		2500,   // Medium Positive
-		10000,  // Large Positive
-		20000,  // End of the range after Large Positive
+		-15000,
+		-10000,
+		-5000,
+		-2500,
+		-1250,
+		0,
+		1250,
+		2500,
+		5000,
+		10000,
+		15000,
 	}
 
 	sigmas := make([]float64, len(peaks)-1)
-	for i := 0; i < len(peaks)-1; i++ {
+	for i := range sigmas {
 		sigmas[i] = calculateSigma(peaks[i], peaks[i+1])
 	}
 
-	fuzzy := make(map[string]float64)
-	fuzzy[LARGENEGATIVE] = gaussianMembership(msgSec, -10000, sigmas[0])
-	fuzzy[MEDIUMNEGATIVE] = gaussianMembership(msgSec, -2500, sigmas[1])
-	fuzzy[SMALLNEGATIVE] = gaussianMembership(msgSec, -500, sigmas[2])
-	fuzzy[ZERO] = gaussianMembership(msgSec, 0, sigmas[3])
-	fuzzy[SMALLPOSITIVE] = gaussianMembership(msgSec, 500, sigmas[4])
-	fuzzy[MEDIUMPOSITIVE] = gaussianMembership(msgSec, 2500, sigmas[5])
-	fuzzy[LARGEPOSITIVE] = gaussianMembership(msgSec, 10000, sigmas[6])
+	fuzzy[VeryLargeNegative] = gaussianMembership(msgSec, -15000, sigmas[0])
+	fuzzy[LargeNegative] = gaussianMembership(msgSec, -10000, sigmas[1])
+	fuzzy[MediumNegative] = gaussianMembership(msgSec, -5000, sigmas[2])
+	fuzzy[SmallNegative] = gaussianMembership(msgSec, -2500, sigmas[3])
+	fuzzy[VerySmallNegative] = gaussianMembership(msgSec, -1250, sigmas[4])
+	fuzzy[Zero] = gaussianMembership(msgSec, 0, sigmas[5])
+	fuzzy[VerySmallPositive] = gaussianMembership(msgSec, 1250, sigmas[6])
+	fuzzy[SmallPositive] = gaussianMembership(msgSec, 2500, sigmas[7])
+	fuzzy[MediumPositive] = gaussianMembership(msgSec, 5000, sigmas[8])
+	fuzzy[LargePositive] = gaussianMembership(msgSec, 10000, sigmas[9])
+	fuzzy[VeryLargePositive] = gaussianMembership(msgSec, 15000, sigmas[9])
+
 	return fuzzy
 }
 
@@ -83,29 +116,37 @@ func fuzzyficationOutput(n float64) map[string]float64 {
 	r := map[string]float64{}
 
 	peaks := []float64{
-		-4, // Large Negative
-		-3, // Start of next category after Large Negative
-		-2, // Medium Negative
-		-1, // Small Negative
-		0,  // Zero
-		1,  // Small Positive
-		2,  // Medium Positive
-		3,  // Large Positive
-		4,  // End of the range after Large Positive
+		-8,
+		-6,
+		-4,
+		-2,
+		-1,
+		0,
+		1,
+		2,
+		4,
+		6,
+		8,
 	}
 
 	sigmas := make([]float64, len(peaks)-1)
 
-	for i := 0; i < len(peaks)-1; i++ {
+	for i := range sigmas {
 		sigmas[i] = calculateSigma(peaks[i], peaks[i+1])
 
 	}
 
-	r[LARGEINCREASE] = gaussianMembership(n, 3.0, sigmas[7])
-	r[SMALLINCREASE] = gaussianMembership(n, 1.5, sigmas[5])
-	r[MAINTAIN] = gaussianMembership(n, 0.0, sigmas[4])
-	r[SMALLDECREASE] = gaussianMembership(n, -1.5, sigmas[2])
-	r[LARGEDECREASE] = gaussianMembership(n, -2.0, sigmas[0])
+	r[VeryLargeDecrease] = gaussianMembership(n, -8, sigmas[0])
+	r[LargeDecrease] = gaussianMembership(n, -6, sigmas[1])
+	r[MediumDecrease] = gaussianMembership(n, -4, sigmas[2])
+	r[SmallDecrease] = gaussianMembership(n, -2, sigmas[3])
+	r[VerySmallDecrease] = gaussianMembership(n, -1, sigmas[4])
+	r[Maintain] = gaussianMembership(n, 0, sigmas[5])
+	r[VerySmallIncrease] = gaussianMembership(n, 1, sigmas[6])
+	r[SmallIncrease] = gaussianMembership(n, 2, sigmas[7])
+	r[MediumIncrease] = gaussianMembership(n, 4, sigmas[8])
+	r[LargeIncrease] = gaussianMembership(n, 6, sigmas[9])
+	r[VeryLargeIncrease] = gaussianMembership(n, 8, sigmas[9])
 
 	return r
 }
@@ -114,47 +155,27 @@ func applyRules(e map[string]float64) ([]float64, []float64) {
 	mx := []float64{}
 	output := []float64{}
 
-	// Rule 1: IF e = LARGEPOSITIVE THEN output = LARGEINCREASE
-	m1 := e[LARGEPOSITIVE]
-	o1 := getMaxOutput(LARGEINCREASE)
-	mx = append(mx, m1)
-	output = append(output, o1)
+	rules := []struct {
+		Condition string
+		Result    string
+	}{
+		{VeryLargeNegative, VeryLargeDecrease},
+		{LargeNegative, LargeDecrease},
+		{MediumNegative, MediumDecrease},
+		{SmallNegative, SmallDecrease},
+		{VerySmallNegative, VerySmallDecrease},
+		{Zero, Maintain},
+		{VerySmallPositive, VerySmallIncrease},
+		{SmallPositive, SmallIncrease},
+		{MediumPositive, MediumIncrease},
+		{LargePositive, LargeIncrease},
+		{VeryLargePositive, VeryLargeIncrease},
+	}
 
-	// Rule 2: IF e = MEDIUMPOSITIVE THEN output = LARGEINCREASE
-	m2 := e[MEDIUMPOSITIVE]
-	o2 := getMaxOutput(LARGEINCREASE)
-	mx = append(mx, m2)
-	output = append(output, o2)
-
-	// Rule 3: IF e = SMALLPOSITIVE THEN output = SMALLINCREASE
-	m3 := e[SMALLPOSITIVE]
-	o3 := getMaxOutput(SMALLINCREASE)
-	mx = append(mx, m3)
-	output = append(output, o3)
-
-	// Rule 4: IF e = ZERO THEN output = MAINTAIN
-	m4 := e[ZERO]
-	o4 := getMaxOutput(MAINTAIN)
-	mx = append(mx, m4)
-	output = append(output, o4)
-
-	// Rule 5: IF e = SMALLNEGATIVE THEN output = SMALLDECREASE
-	m5 := e[SMALLNEGATIVE]
-	o5 := getMaxOutput(SMALLDECREASE)
-	mx = append(mx, m5)
-	output = append(output, o5)
-
-	// Rule 6: IF e = MEDIUMNEGATIVE THEN output = LARGEDECREASE
-	m6 := e[MEDIUMNEGATIVE]
-	o6 := getMaxOutput(LARGEDECREASE)
-	mx = append(mx, m6)
-	output = append(output, o6)
-
-	// Rule 7: IF e = LARGENEGATIVE THEN output = LARGEDECREASE
-	m7 := e[LARGENEGATIVE]
-	o7 := getMaxOutput(LARGEDECREASE)
-	mx = append(mx, m7)
-	output = append(output, o7)
+	for _, rule := range rules {
+		mx = append(mx, e[rule.Condition])
+		output = append(output, getMaxOutput(rule.Result))
+	}
 
 	return mx, output
 }
@@ -163,7 +184,7 @@ func getMaxOutput(s string) float64 {
 	r := 0.0
 	max := -20000.0 // Initialize to a sufficiently low number to ensure any higher value is chosen.
 
-	for i := -4.0; i <= 4.0; i += 0.5 { // Decreased step size for more precision
+	for i := -8.0; i <= 8.0; i += 0.5 { // Decreased step size for more precision
 		v := fuzzyficationOutput(i)
 
 		if v[s] > max {
@@ -174,20 +195,18 @@ func getMaxOutput(s string) float64 {
 	return r
 }
 
-func centroidDeffuzification(mx, output, importanceFactors []float64) float64 {
+func centroidDefuzzification(mx, output []float64) float64 {
 	numerator, denominator := 0.0, 0.0
 
-	for i := 0; i < len(mx); i++ {
-		adjustedOutput := output[i] * importanceFactors[i]
-		numerator += mx[i] * adjustedOutput
-		denominator += mx[i]
-		fmt.Printf("Membership: %.4f, Adjusted Output: %.4f, Product: %.4f\n", mx[i], adjustedOutput, mx[i]*adjustedOutput)
+	for i, m := range mx {
+		adjustedOutput := output[i] * m
+		numerator += adjustedOutput
+		denominator += m // Adjust by importance factors
 	}
 
-	fmt.Printf("Numerator: %.4f, Denominator: %.4f\n", numerator, denominator)
 	if denominator == 0 {
-		fmt.Println("Warning: Denominator is zero, defaulting output to 1")
-		return 1 // You may choose a different default behavior
+		log.Println("Warning: Denominator is zero, defaulting output to 0")
+		return 0
 	}
 	return numerator / denominator
 }
@@ -208,14 +227,14 @@ func Result(p ...float64) float64 {
 	mx, output := applyRules(fuzzifiedSetError)
 
 	// Deffuzification
-	importanceFactors := []float64{1.5, 1.5, 1.0, 1.0, 0.5, 0.5, 0.3}
-	u := centroidDeffuzification(mx, output, importanceFactors)
+	u := centroidDefuzzification(mx, output)
 
 	fmt.Printf("Fuzzy Controller: %.2f\n", u)
 	return u
 }
 
 func main() {
+	prefetchValue := 1
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
@@ -224,8 +243,13 @@ func main() {
 	failOnError(err, "Failed to open a channel")
 	defer ch.Close()
 
-	err = ch.Qos(62, 0, true)
-	failOnError(err, "Failed to set QoS")
+	fmt.Println("Enter the prefetch value: ", prefetchValue)
+
+	if prefetchValue == 1 {
+		err = ch.Qos(prefetchValue, 0, true)
+		failOnError(err, "Failed to set QoS")
+
+	}
 
 	q, err := ch.QueueDeclare(
 		"task_queue", // name
@@ -235,7 +259,6 @@ func main() {
 		false,        // no-wait
 		nil,          // arguments
 	)
-
 	failOnError(err, "Failed to declare a queue")
 
 	msg, err := ch.Consume(
@@ -247,66 +270,77 @@ func main() {
 		false,  // no-wait
 		nil,    // args
 	)
-
 	failOnError(err, "Failed to register a consumer")
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
+
+	gols := 10000
+	tickerGols := time.NewTicker(900 * time.Second)
+	defer tickerGols.Stop()
 
 	messageReceived := make(chan bool)
 
-	go func() {
+	file, err := os.OpenFile("message_rate_gaussian_1.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
 
+	go func() {
 		for d := range msg {
+			err := d.Ack(false)
 			log.Printf("Received a message: %s", d.Body)
 			messageCount++
-			lastMessageTime = time.Now().Truncate(time.Second)
+
 			messageReceived <- true
-			err := d.Ack(false)
+
 			failOnError(err, "Failed to acknowledge message")
 		}
-
 	}()
 
 	go func() {
-
 		for {
+
 			select {
+
 			case <-ticker.C:
-				if time.Since(lastMessageTime) > 10*time.Second && messageCount > 0 {
 
-					log.Printf("firstMessageTime: %v", firstMessageTime)
-					log.Printf("lastMessageTime: %v", lastMessageTime)
-					duration := int(lastMessageTime.Sub(firstMessageTime).Seconds())
-					log.Printf("Messages processed: %d", messageCount)
-					log.Printf("Duration: %d", duration)
+				if messageCount > 0 {
+					rate := float64(messageCount) / 30
+					rateAdjust := Result(float64(gols), rate)
 
-					rate := float64(messageCount) / float64(duration)
-
-					log.Printf("Rate: %.2f msg/sec", rate)
-					Result(25000, float64(rate))
-
-					if duration == 0 {
-						continue
+					if _, err := file.WriteString(time.Now().Format("2006-01-02 15:04:05") + " - Messages: " + strconv.Itoa(messageCount) + ", Rate: " + fmt.Sprintf("%.2f", rate) + " msg/sec, Prefetch: " + strconv.Itoa(prefetchValue) + " - " + "Prefetch valur adjust: " + strconv.Itoa(int(rateAdjust)) + " - " + "Goal: " + strconv.Itoa(gols) + "\n"); err != nil {
+						log.Fatal(err)
 					}
-
+					//int(rateAdjust)
+					prefetchValue += int(rateAdjust)
+					log.Printf("Messages processed in the last 10 seconds: %d", messageCount)
+					log.Printf("Current prefetch value: %d", prefetchValue)
+					// Escrever no arquivo
 					messageCount = 0
-					duration = 0
-					firstMessageTime = time.Time{}
-
+					err = ch.Qos(prefetchValue, 0, true)
+					failOnError(err, "Failed to set QoS")
 				}
 			case <-messageReceived:
-				if firstMessageTime.IsZero() {
-					firstMessageTime = time.Now().Truncate(time.Second)
+
+			case <-tickerGols.C:
+				if gols > 15000 && gols < 17000 {
+					gols = int(gols / 2)
+				} else if gols > 25000 && gols < 28000 {
+
+					gols -= 10000
+
+				} else {
+					gols += 4000
 				}
+
 			}
 		}
-
 	}()
 
-	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
+	log.Println(" [*] Waiting for messages. To exit press CTRL+C")
 	forever := make(chan bool)
-
 	<-forever
 
 }
