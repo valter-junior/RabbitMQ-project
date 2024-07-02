@@ -150,7 +150,7 @@ func getMaxOutput(s string) float64 {
 	r := 0.0
 	max := -20000.0 // Initialize to a sufficiently low number to ensure any higher value is chosen.
 
-	for i := -8.0; i <= 8.0; i += 0.5 { // Decreased step size for more precision
+	for i := -8.0; i <= 8.0; i += 0.1 { // Decreased step size for more precision
 		v := fuzzyficationOutput(i)
 
 		if v[s] > max {
@@ -160,19 +160,24 @@ func getMaxOutput(s string) float64 {
 	}
 	return r
 }
-func centroidDefuzzification(mx, output []float64) float64 {
-	numerator, denominator := 0.0, 0.0
 
-	for i, m := range mx {
-		adjustedOutput := output[i] * m
-		numerator += adjustedOutput
-		denominator += m // Adjust by importance factors
+func centroidDefuzzification(mx []float64, output []float64) float64 {
+	if len(mx) != len(output) {
+		fmt.Println("Error: membership and output arrays must be of the same length")
+		return 0
+	}
+
+	var numerator, denominator float64
+
+	for i := range mx {
+		numerator += mx[i] * output[i]
+		denominator += mx[i]
 	}
 
 	if denominator == 0 {
-		log.Println("Warning: Denominator is zero, defaulting output to 0")
-		return 0
+		return 0 // Avoid division by zero
 	}
+
 	return numerator / denominator
 }
 
@@ -231,16 +236,16 @@ func main() {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
 	gols := 10000
-	tickerGols := time.NewTicker(900 * time.Second)
+	tickerGols := time.NewTicker(450 * time.Second)
 	defer tickerGols.Stop()
 
 	messageReceived := make(chan bool)
 
-	file, err := os.OpenFile("message_rate_bell_1.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("message_rate_bell_11.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -266,7 +271,7 @@ func main() {
 			case <-ticker.C:
 
 				if messageCount > 0 {
-					rate := float64(messageCount) / 30
+					rate := float64(messageCount) / 15
 					rateAdjust := Result(float64(gols), rate)
 
 					if _, err := file.WriteString(time.Now().Format("2006-01-02 15:04:05") + " - Messages: " + strconv.Itoa(messageCount) + ", Rate: " + fmt.Sprintf("%.2f", rate) + " msg/sec, Prefetch: " + strconv.Itoa(prefetchValue) + " - " + "Prefetch valur adjust: " + strconv.Itoa(int(rateAdjust)) + " - " + "Goal: " + strconv.Itoa(gols) + "\n"); err != nil {
@@ -301,4 +306,5 @@ func main() {
 	log.Println(" [*] Waiting for messages. To exit press CTRL+C")
 	forever := make(chan bool)
 	<-forever
+
 }
