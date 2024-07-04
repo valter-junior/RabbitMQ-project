@@ -18,35 +18,45 @@ var (
 )
 
 const (
-	VeryLargeNegative = "VLN"
-	LargeNegative     = "LN"
-	MediumNegative    = "MN"
-	SmallNegative     = "SN"
-	VerySmallNegative = "VSN"
-	Zero              = "ZE"
-	VerySmallPositive = "VSP"
-	SmallPositive     = "SP"
-	MediumPositive    = "MP"
-	LargePositive     = "LP"
-	VeryLargePositive = "VLP"
+	/*VeryLargeNegative = "VLN"
+	  LargeNegative     = "LN"
+	  MediumNegative    = "MN"
+	  SmallNegative     = "SN"
+	  VerySmallNegative = "VSN"
+	  Zero              = "ZE"
+	  VerySmallPositive = "VSP"
+	  SmallPositive     = "SP"
+	  MediumPositive    = "MP"
+	  LargePositive     = "LP"
+	  VeryLargePositive = "VLP"
 
-	VeryLargeDecrease = "VLD"
-	LargeDecrease     = "LD"
-	MediumDecrease    = "MD"
-	SmallDecrease     = "SD"
-	VerySmallDecrease = "VSD"
-	Maintain          = "MAINTAIN"
-	VerySmallIncrease = "VSI"
-	SmallIncrease     = "SI"
-	MediumIncrease    = "MI"
-	LargeIncrease     = "LI"
-	VeryLargeIncrease = "VLI"
+	  VeryLargeDecrease = "VLD"
+	  LargeDecrease     = "LD"
+	  MediumDecrease    = "MD"
+	  SmallDecrease     = "SD"
+	  VerySmallDecrease = "VSD"
+	  Maintain          = "MAINTAIN"
+	  VerySmallIncrease = "VSI"
+	  SmallIncrease     = "SI"
+	  MediumIncrease    = "MI"
+	  LargeIncrease     = "LI"
+	  VeryLargeIncrease = "VLI"*/
 
-	/*LargeIncrease = "LI"
-	SmallIncrease = "SI"
-	Maintain      = "MAINTAIN"
-	SmallDecrease = "SD"
-	LargeDecrease = "LD"*/
+	/*
+	   LargeIncrease = "LI"
+	   SmallIncrease = "SI"
+	   Maintain      = "MAINTAIN"
+	   SmallDecrease = "SD"
+	   LargeDecrease = "LD"
+	*/
+
+	High   = "H"
+	Medium = "M"
+	Low    = "L"
+
+	Decrease = "D"
+	Maintain = "M"
+	Increase = "I"
 )
 
 func failOnError(err error, msg string) {
@@ -77,36 +87,22 @@ func calculateSigma(leftPeak, rightPeak float64) float64 {
 func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
 
-	peaks := []float64{
-		-15000,
-		-10000,
-		-5000,
-		-2500,
-		-1250,
-		0,
-		1250,
-		2500,
-		5000,
-		10000,
-		15000,
-	}
+	peaks := []float64{-7500, 0, 7500}
 
-	sigmas := make([]float64, len(peaks)-1)
+	// Calculando sigmas com base na distância entre os picos
+	sigmas := make([]float64, len(peaks))
 	for i := range sigmas {
-		sigmas[i] = calculateSigma(peaks[i], peaks[i+1])
+		if i == 0 {
+			sigmas[i] = calculateSigma(peaks[i], 0)
+		} else {
+			sigmas[i] = calculateSigma(peaks[i-1], peaks[i])
+		}
 	}
 
-	fuzzy[VeryLargeNegative] = gaussianMembership(msgSec, -15000, sigmas[0])
-	fuzzy[LargeNegative] = gaussianMembership(msgSec, -10000, sigmas[1])
-	fuzzy[MediumNegative] = gaussianMembership(msgSec, -5000, sigmas[2])
-	fuzzy[SmallNegative] = gaussianMembership(msgSec, -2500, sigmas[3])
-	fuzzy[VerySmallNegative] = gaussianMembership(msgSec, -1250, sigmas[4])
-	fuzzy[Zero] = gaussianMembership(msgSec, 0, sigmas[5])
-	fuzzy[VerySmallPositive] = gaussianMembership(msgSec, 1250, sigmas[6])
-	fuzzy[SmallPositive] = gaussianMembership(msgSec, 2500, sigmas[7])
-	fuzzy[MediumPositive] = gaussianMembership(msgSec, 5000, sigmas[8])
-	fuzzy[LargePositive] = gaussianMembership(msgSec, 10000, sigmas[9])
-	fuzzy[VeryLargePositive] = gaussianMembership(msgSec, 15000, sigmas[9])
+	// Atribuindo funções de pertinência para cada categoria
+	fuzzy[Low] = gaussianMembership(msgSec, peaks[0], sigmas[0])
+	fuzzy[Medium] = gaussianMembership(msgSec, peaks[1], sigmas[1])
+	fuzzy[High] = gaussianMembership(msgSec, peaks[2], sigmas[2])
 
 	return fuzzy
 }
@@ -115,38 +111,20 @@ func fuzzyficationOutput(n float64) map[string]float64 {
 
 	r := map[string]float64{}
 
-	peaks := []float64{
-		-8,
-		-6,
-		-4,
-		-2,
-		-1,
-		0,
-		1,
-		2,
-		4,
-		6,
-		8,
-	}
+	peaks := []float64{-8, 0, 8}
 
-	sigmas := make([]float64, len(peaks)-1)
-
+	sigmas := make([]float64, len(peaks))
 	for i := range sigmas {
-		sigmas[i] = calculateSigma(peaks[i], peaks[i+1])
-
+		if i == 0 {
+			sigmas[i] = calculateSigma(peaks[i], 0)
+		} else {
+			sigmas[i] = calculateSigma(peaks[i-1], peaks[i])
+		}
 	}
 
-	r[VeryLargeDecrease] = gaussianMembership(n, -8, sigmas[0])
-	r[LargeDecrease] = gaussianMembership(n, -6, sigmas[1])
-	r[MediumDecrease] = gaussianMembership(n, -4, sigmas[2])
-	r[SmallDecrease] = gaussianMembership(n, -2, sigmas[3])
-	r[VerySmallDecrease] = gaussianMembership(n, -1, sigmas[4])
-	r[Maintain] = gaussianMembership(n, 0, sigmas[5])
-	r[VerySmallIncrease] = gaussianMembership(n, 1, sigmas[6])
-	r[SmallIncrease] = gaussianMembership(n, 2, sigmas[7])
-	r[MediumIncrease] = gaussianMembership(n, 4, sigmas[8])
-	r[LargeIncrease] = gaussianMembership(n, 6, sigmas[9])
-	r[VeryLargeIncrease] = gaussianMembership(n, 8, sigmas[9])
+	r[Decrease] = gaussianMembership(n, peaks[0], sigmas[0])
+	r[Maintain] = gaussianMembership(n, peaks[1], sigmas[1])
+	r[Increase] = gaussianMembership(n, peaks[2], sigmas[2])
 
 	return r
 }
@@ -159,17 +137,9 @@ func applyRules(e map[string]float64) ([]float64, []float64) {
 		Condition string
 		Result    string
 	}{
-		{VeryLargeNegative, VeryLargeDecrease},
-		{LargeNegative, LargeDecrease},
-		{MediumNegative, MediumDecrease},
-		{SmallNegative, SmallDecrease},
-		{VerySmallNegative, VerySmallDecrease},
-		{Zero, Maintain},
-		{VerySmallPositive, VerySmallIncrease},
-		{SmallPositive, SmallIncrease},
-		{MediumPositive, MediumIncrease},
-		{LargePositive, LargeIncrease},
-		{VeryLargePositive, VeryLargeIncrease},
+		{Low, Decrease},
+		{Medium, Maintain},
+		{High, Increase},
 	}
 
 	for _, rule := range rules {
@@ -184,7 +154,7 @@ func getMaxOutput(s string) float64 {
 	r := 0.0
 	max := -20000.0 // Initialize to a sufficiently low number to ensure any higher value is chosen.
 
-	for i := -8.0; i <= 8.0; i += 0.5 { // Decreased step size for more precision
+	for i := -8.0; i <= 8.0; i += 0.1 { // Decreased step size for more precision
 		v := fuzzyficationOutput(i)
 
 		if v[s] > max {
@@ -195,19 +165,23 @@ func getMaxOutput(s string) float64 {
 	return r
 }
 
-func centroidDefuzzification(mx, output []float64) float64 {
-	numerator, denominator := 0.0, 0.0
+func centroidDefuzzification(mx []float64, output []float64) float64 {
+	if len(mx) != len(output) {
+		fmt.Println("Error: membership and output arrays must be of the same length")
+		return 0
+	}
 
-	for i, m := range mx {
-		adjustedOutput := output[i] * m
-		numerator += adjustedOutput
-		denominator += m // Adjust by importance factors
+	var numerator, denominator float64
+
+	for i := range mx {
+		numerator += mx[i] * output[i]
+		denominator += mx[i]
 	}
 
 	if denominator == 0 {
-		log.Println("Warning: Denominator is zero, defaulting output to 0")
-		return 0
+		return 0 // Avoid division by zero
 	}
+
 	return numerator / denominator
 }
 
@@ -272,16 +246,16 @@ func main() {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
 	gols := 10000
-	tickerGols := time.NewTicker(900 * time.Second)
+	tickerGols := time.NewTicker(450 * time.Second)
 	defer tickerGols.Stop()
 
 	messageReceived := make(chan bool)
 
-	file, err := os.OpenFile("message_rate_gaussian_1.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("message_rate_gaussian_3.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -307,7 +281,7 @@ func main() {
 			case <-ticker.C:
 
 				if messageCount > 0 {
-					rate := float64(messageCount) / 30
+					rate := float64(messageCount) / 15
 					rateAdjust := Result(float64(gols), rate)
 
 					if _, err := file.WriteString(time.Now().Format("2006-01-02 15:04:05") + " - Messages: " + strconv.Itoa(messageCount) + ", Rate: " + fmt.Sprintf("%.2f", rate) + " msg/sec, Prefetch: " + strconv.Itoa(prefetchValue) + " - " + "Prefetch valur adjust: " + strconv.Itoa(int(rateAdjust)) + " - " + "Goal: " + strconv.Itoa(gols) + "\n"); err != nil {

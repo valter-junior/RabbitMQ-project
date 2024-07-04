@@ -35,29 +35,13 @@ const (
 	SmallDecrease  = "SD"
 	LargeDecrease  = "LD"*/
 
-	VeryLargeNegative = "VLN"
-	LargeNegative     = "LN"
-	MediumNegative    = "MN"
-	SmallNegative     = "SN"
-	VerySmallNegative = "VSN"
-	Zero              = "ZE"
-	VerySmallPositive = "VSP"
-	SmallPositive     = "SP"
-	MediumPositive    = "MP"
-	LargePositive     = "LP"
-	VeryLargePositive = "VLP"
+	High   = "High"
+	Medium = "Medium"
+	Low    = "Low"
 
-	VeryLargeDecrease = "VLD"
-	LargeDecrease     = "LD"
-	MediumDecrease    = "MD"
-	SmallDecrease     = "SD"
-	VerySmallDecrease = "VSD"
-	Maintain          = "MAINTAIN"
-	VerySmallIncrease = "VSI"
-	SmallIncrease     = "SI"
-	MediumIncrease    = "MI"
-	LargeIncrease     = "LI"
-	VeryLargeIncrease = "VLI"
+	Decrease = "D"
+	Maintain = "M"
+	Increase = "I"
 )
 
 func failOnError(err error, msg string) {
@@ -74,17 +58,9 @@ func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
 
 	centers := map[string]struct{ a, b, c float64 }{
-		VeryLargeNegative: {4000, 2, -15000},
-		LargeNegative:     {3000, 2, -10000},
-		MediumNegative:    {2000, 2, -5000},
-		SmallNegative:     {1000, 2, -2500},
-		VerySmallNegative: {500, 2, -1250},
-		Zero:              {250, 2, 0},
-		VerySmallPositive: {500, 2, 1250},
-		SmallPositive:     {1000, 2, 2500},
-		MediumPositive:    {2000, 2, 5000},
-		LargePositive:     {3000, 2, 10000},
-		VeryLargePositive: {4000, 2, 15000},
+		Low:    {7500, 2, -7500}, // Abrange desde -15000 até 0
+		Medium: {500, 2, 0},      // Foco em valores próximos a zero
+		High:   {7500, 2, 7500},  // Abrange de 0 até 15000
 	}
 
 	for label, params := range centers {
@@ -97,17 +73,9 @@ func fuzzyficationOutput(x float64) map[string]float64 {
 	result := make(map[string]float64)
 
 	cValues := map[string]struct{ a, b, c float64 }{
-		VeryLargeDecrease: {4.0, 2.0, -8}, // Equivalente a VeryLargeNegative
-		LargeDecrease:     {3.5, 2.0, -6}, // Equivalente a LargeNegative
-		MediumDecrease:    {3.0, 2.0, -4}, // Equivalente a MediumNegative
-		SmallDecrease:     {2.5, 2.0, -2}, // Equivalente a SmallNegative
-		VerySmallDecrease: {2.0, 2.0, -1}, // Equivalente a VerySmallNegative
-		Maintain:          {1.5, 2.0, 0},  // Equivalente a Zero
-		VerySmallIncrease: {2.0, 2.0, 1},  // Equivalente a VerySmallPositive
-		SmallIncrease:     {2.5, 2.0, 2},  // Equivalente a SmallPositive
-		MediumIncrease:    {3.0, 2.0, 4},  // Equivalente a MediumPositive
-		LargeIncrease:     {3.5, 2.0, 6},  // Equivalente a LargePositive
-		VeryLargeIncrease: {4.0, 2.0, 8},
+		Decrease: {6.0, 2.0, -8}, // Cobrindo uma faixa larga para todas as diminuições
+		Maintain: {2.0, 2.0, 0},  // Foco em valores próximos a zero, representando a manutenção
+		Increase: {6.0, 2.0, 8},  // Cobrindo uma faixa larga para todos os aumentos
 	}
 
 	for label, params := range cValues {
@@ -125,17 +93,9 @@ func applyRules(e map[string]float64) ([]float64, []float64) {
 		Condition string
 		Result    string
 	}{
-		{VeryLargeNegative, VeryLargeDecrease},
-		{LargeNegative, LargeDecrease},
-		{MediumNegative, MediumDecrease},
-		{SmallNegative, SmallDecrease},
-		{VerySmallNegative, VerySmallDecrease},
-		{Zero, Maintain},
-		{VerySmallPositive, VerySmallIncrease},
-		{SmallPositive, SmallIncrease},
-		{MediumPositive, MediumIncrease},
-		{LargePositive, LargeIncrease},
-		{VeryLargePositive, VeryLargeIncrease},
+		{Low, Decrease},
+		{Medium, Maintain},
+		{High, Increase},
 	}
 
 	for _, rule := range rules {
@@ -245,7 +205,7 @@ func main() {
 
 	messageReceived := make(chan bool)
 
-	file, err := os.OpenFile("message_rate_bell_11.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("message_rate_bell_3.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
