@@ -21,11 +21,7 @@ const (
 	VeryLargeNegative = "VLN"
 	LargeNegative     = "LN"
 	MediumNegative    = "MN"
-	SmallNegative     = "SN"
-	VerySmallNegative = "VSN"
 	Zero              = "ZE"
-	VerySmallPositive = "VSP"
-	SmallPositive     = "SP"
 	MediumPositive    = "MP"
 	LargePositive     = "LP"
 	VeryLargePositive = "VLP"
@@ -33,11 +29,7 @@ const (
 	VeryLargeDecrease = "VLD"
 	LargeDecrease     = "LD"
 	MediumDecrease    = "MD"
-	SmallDecrease     = "SD"
-	VerySmallDecrease = "VSD"
 	Maintain          = "MAINTAIN"
-	VerySmallIncrease = "VSI"
-	SmallIncrease     = "SI"
 	MediumIncrease    = "MI"
 	LargeIncrease     = "LI"
 	VeryLargeIncrease = "VLI"
@@ -57,36 +49,28 @@ func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
 
 	// Define the overlaps and categories in the range -15000 to 15000
-	fuzzy["VLN"] = triangularMF(msgSec, -15000, -15000, -12000) // Start of the range to -12000
-	fuzzy["LN"] = triangularMF(msgSec, -13500, -12000, -9000)   // Overlapping midpoint at -12000
-	fuzzy["MN"] = triangularMF(msgSec, -10500, -9000, -6000)    // Overlapping midpoint at -9000
-	fuzzy["SN"] = triangularMF(msgSec, -7500, -6000, -3000)     // Overlapping midpoint at -6000
-	fuzzy["VSN"] = triangularMF(msgSec, -4500, -3000, 0)        // Overlapping midpoint at -3000
-	fuzzy["ZE"] = triangularMF(msgSec, -1500, 0, 1500)          // Center at 0
-	fuzzy["VSP"] = triangularMF(msgSec, 0, 3000, 4500)          // Overlapping midpoint at 3000
-	fuzzy["SP"] = triangularMF(msgSec, 3000, 6000, 7500)        // Overlapping midpoint at 6000
-	fuzzy["MP"] = triangularMF(msgSec, 6000, 9000, 10500)       // Overlapping midpoint at 9000
-	fuzzy["LP"] = triangularMF(msgSec, 9000, 12000, 13500)      // Overlapping midpoint at 12000
-	fuzzy["VLP"] = triangularMF(msgSec, 12000, 15000, 15000)    // End of the range starting from 12000
+	fuzzy["VLN"] = triangularMF(msgSec, -15000, -15000, -10000) // From start to -10000
+	fuzzy["LN"] = triangularMF(msgSec, -12000, -10000, -5000)   // Overlapping midpoint at -10000
+	fuzzy["MN"] = triangularMF(msgSec, -7500, -5000, 0)         // Overlapping midpoint at -5000
+	fuzzy["ZE"] = triangularMF(msgSec, -2500, 0, 2500)          // Center at 0
+	fuzzy["MP"] = triangularMF(msgSec, 0, 5000, 7500)           // Overlapping midpoint at 5000
+	fuzzy["LP"] = triangularMF(msgSec, 5000, 7500, 12000)       // Overlapping midpoint at 7500
+	fuzzy["VLP"] = triangularMF(msgSec, 10000, 12000, 15000)    // End of the range starting from 12000
 
 	return fuzzy
 }
 
 func fuzzyficationOutput(n float64) map[string]float64 {
-	r := map[string]float64{}
+	r := make(map[string]float64)
 
-	// Extend and adjust the categories to fit the new range of -8 to 8
-	r["VLD"] = triangularMF(n, -8, -7, -6) // New category for broader range
-	r["LD"] = triangularMF(n, -7, -6, -5)
-	r["MD"] = triangularMF(n, -6, -5, -4)
-	r["SD"] = triangularMF(n, -5, -4, -3)
-	r["VSD"] = triangularMF(n, -4, -3, -2) // Added for smooth transition
-	r["MAINTAIN"] = triangularMF(n, -1, 0, 1)
-	r["VSI"] = triangularMF(n, 2, 3, 4) // Added for smooth transition
-	r["SI"] = triangularMF(n, 3, 4, 5)
-	r["MI"] = triangularMF(n, 4, 5, 6)
-	r["LI"] = triangularMF(n, 5, 6, 7)
-	r["VLI"] = triangularMF(n, 6, 7, 8) // New category for broader range
+	// Categorias ajustadas para cobrir o intervalo de -8 a 8 com sobreposições adequadas
+	r["VLD"] = triangularMF(n, -8, -6.5, -5)      // Very Low Decrease
+	r["LD"] = triangularMF(n, -5.5, -4, -2.5)     // Low Decrease
+	r["MD"] = triangularMF(n, -3, -1.5, 0)        // Moderate Decrease
+	r["MAINTAIN"] = triangularMF(n, -0.5, 0, 0.5) // Maintain current rate
+	r["MI"] = triangularMF(n, 0, 1.5, 3)          // Moderate Increase
+	r["LI"] = triangularMF(n, 2.5, 4, 5.5)        // Large Increase
+	r["VLI"] = triangularMF(n, 5, 6.5, 8)         // Very Large Increase
 
 	return r
 }
@@ -102,11 +86,7 @@ func applyRules(e map[string]float64) ([]float64, []float64) {
 		{VeryLargeNegative, VeryLargeDecrease},
 		{LargeNegative, LargeDecrease},
 		{MediumNegative, MediumDecrease},
-		{SmallNegative, SmallDecrease},
-		{VerySmallNegative, VerySmallDecrease},
 		{Zero, Maintain},
-		{VerySmallPositive, VerySmallIncrease},
-		{SmallPositive, SmallIncrease},
 		{MediumPositive, MediumIncrease},
 		{LargePositive, LargeIncrease},
 		{VeryLargePositive, VeryLargeIncrease},
@@ -124,7 +104,7 @@ func getMaxOutput(s string) float64 {
 	r := 0.0
 	max := -20000.0 // Initialize to a sufficiently low number to ensure any higher value is chosen.
 
-	for i := -8.0; i <= 8.0; i += 0.5 { // Decreased step size for more precision
+	for i := -8.0; i <= 8.0; i += 0.1 { // Decreased step size for more precision
 		v := fuzzyficationOutput(i)
 
 		if v[s] > max {
@@ -135,19 +115,23 @@ func getMaxOutput(s string) float64 {
 	return r
 }
 
-func centroidDefuzzification(mx, output []float64) float64 {
-	numerator, denominator := 0.0, 0.0
+func centroidDefuzzification(mx []float64, output []float64) float64 {
+	if len(mx) != len(output) {
+		fmt.Println("Error: membership and output arrays must be of the same length")
+		return 0
+	}
 
-	for i, m := range mx {
-		adjustedOutput := output[i] * m
-		numerator += adjustedOutput
-		denominator += m // Adjust by importance factors
+	var numerator, denominator float64
+
+	for i := range mx {
+		numerator += mx[i] * output[i]
+		denominator += mx[i]
 	}
 
 	if denominator == 0 {
-		log.Println("Warning: Denominator is zero, defaulting output to 0")
-		return 0
+		return 0 // Avoid division by zero
 	}
+
 	return numerator / denominator
 }
 
@@ -168,6 +152,9 @@ func Result(p ...float64) float64 {
 
 	// Deffuzification
 	//importanceFactors := []float64{1.5, 1.5, 1.0, 1.0, 0.5, 0.5, 0.3}
+
+	fmt.Printf("mx: %v\n", mx)
+	fmt.Printf("output: %v\n", output)
 	u := centroidDefuzzification(mx, output)
 
 	fmt.Printf("Fuzzy Controller: %.2f\n", u)
@@ -213,16 +200,16 @@ func main() {
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
 	gols := 10000
-	tickerGols := time.NewTicker(900 * time.Second)
+	tickerGols := time.NewTicker(450 * time.Second)
 	defer tickerGols.Stop()
 
 	messageReceived := make(chan bool)
 
-	file, err := os.OpenFile("message_rate_triangular_1.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("message_rate_triangular_7.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -248,7 +235,7 @@ func main() {
 			case <-ticker.C:
 
 				if messageCount > 0 {
-					rate := float64(messageCount) / 30
+					rate := float64(messageCount) / 15
 					rateAdjust := Result(float64(gols), rate)
 
 					if _, err := file.WriteString(time.Now().Format("2006-01-02 15:04:05") + " - Messages: " + strconv.Itoa(messageCount) + ", Rate: " + fmt.Sprintf("%.2f", rate) + " msg/sec, Prefetch: " + strconv.Itoa(prefetchValue) + " - " + "Prefetch valur adjust: " + strconv.Itoa(int(rateAdjust)) + " - " + "Goal: " + strconv.Itoa(gols) + "\n"); err != nil {

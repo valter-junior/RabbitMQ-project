@@ -19,30 +19,10 @@ var (
 )
 
 const (
-	/*LargeNegative  = "LN"
-	MediumNegative = "MN"
-	SmallNegative  = "SN"
-	Zero           = "ZE"
-	SmallPositive  = "SP"
-	MediumPositive = "MP"
-	LargePositive  = "LP"
-
-	LargeIncrease  = "LI"
-	MediumIncrease = "MI"
-	SmallIncrease  = "SI"
-	Maintain       = "MAINTAIN"
-	MediumDecrease = "MD"
-	SmallDecrease  = "SD"
-	LargeDecrease  = "LD"*/
-
 	VeryLargeNegative = "VLN"
 	LargeNegative     = "LN"
 	MediumNegative    = "MN"
-	SmallNegative     = "SN"
-	VerySmallNegative = "VSN"
 	Zero              = "ZE"
-	VerySmallPositive = "VSP"
-	SmallPositive     = "SP"
 	MediumPositive    = "MP"
 	LargePositive     = "LP"
 	VeryLargePositive = "VLP"
@@ -50,11 +30,7 @@ const (
 	VeryLargeDecrease = "VLD"
 	LargeDecrease     = "LD"
 	MediumDecrease    = "MD"
-	SmallDecrease     = "SD"
-	VerySmallDecrease = "VSD"
 	Maintain          = "MAINTAIN"
-	VerySmallIncrease = "VSI"
-	SmallIncrease     = "SI"
 	MediumIncrease    = "MI"
 	LargeIncrease     = "LI"
 	VeryLargeIncrease = "VLI"
@@ -74,17 +50,13 @@ func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
 
 	centers := map[string]struct{ a, b, c float64 }{
-		VeryLargeNegative: {4000, 2, -15000},
-		LargeNegative:     {3000, 2, -10000},
-		MediumNegative:    {2000, 2, -5000},
-		SmallNegative:     {1000, 2, -2500},
-		VerySmallNegative: {500, 2, -1250},
-		Zero:              {250, 2, 0},
-		VerySmallPositive: {500, 2, 1250},
-		SmallPositive:     {1000, 2, 2500},
-		MediumPositive:    {2000, 2, 5000},
-		LargePositive:     {3000, 2, 10000},
-		VeryLargePositive: {4000, 2, 15000},
+		VeryLargeNegative: {2000, 2.0, -10000}, // Ampla e suave para mudanças grandes
+		LargeNegative:     {1000, 2.0, -5000},  // Ampla para mudanças moderadas
+		MediumNegative:    {500, 2.0, -1000},   // Sensível a pequenas transições
+		Zero:              {250, 2.0, 0},       // Muito sensível ao redor do centro
+		MediumPositive:    {500, 2.0, 1000},    // Simetria com SlightlyLow
+		LargePositive:     {1000, 2.0, 5000},   // Simetria com Low
+		VeryLargePositive: {2000, 2.0, 10000},  // Ampla e suave para mudanças grandes
 	}
 
 	for label, params := range centers {
@@ -97,17 +69,13 @@ func fuzzyficationOutput(x float64) map[string]float64 {
 	result := make(map[string]float64)
 
 	cValues := map[string]struct{ a, b, c float64 }{
-		VeryLargeDecrease: {4.0, 2.0, -8}, // Equivalente a VeryLargeNegative
-		LargeDecrease:     {3.5, 2.0, -6}, // Equivalente a LargeNegative
-		MediumDecrease:    {3.0, 2.0, -4}, // Equivalente a MediumNegative
-		SmallDecrease:     {2.5, 2.0, -2}, // Equivalente a SmallNegative
-		VerySmallDecrease: {2.0, 2.0, -1}, // Equivalente a VerySmallNegative
-		Maintain:          {1.5, 2.0, 0},  // Equivalente a Zero
-		VerySmallIncrease: {2.0, 2.0, 1},  // Equivalente a VerySmallPositive
-		SmallIncrease:     {2.5, 2.0, 2},  // Equivalente a SmallPositive
-		MediumIncrease:    {3.0, 2.0, 4},  // Equivalente a MediumPositive
-		LargeIncrease:     {3.5, 2.0, 6},  // Equivalente a LargePositive
-		VeryLargeIncrease: {4.0, 2.0, 8},
+		VeryLargeDecrease: {2.6, 2.0, -8},   // Grande diminuição, centro em -8
+		LargeDecrease:     {2.2, 2.0, -5},   // Diminuição média
+		MediumDecrease:    {1.8, 2.0, -2.5}, // Pequena diminuição
+		Maintain:          {1.6, 2.0, 0},    // Manter
+		MediumIncrease:    {1.8, 2.0, 2.5},  // Pequeno aumento
+		LargeIncrease:     {2.2, 2.0, 5},    // Aumento médio
+		VeryLargeIncrease: {2.6, 2.0, 8},    // Grande aumento, centro em 8
 	}
 
 	for label, params := range cValues {
@@ -128,11 +96,7 @@ func applyRules(e map[string]float64) ([]float64, []float64) {
 		{VeryLargeNegative, VeryLargeDecrease},
 		{LargeNegative, LargeDecrease},
 		{MediumNegative, MediumDecrease},
-		{SmallNegative, SmallDecrease},
-		{VerySmallNegative, VerySmallDecrease},
 		{Zero, Maintain},
-		{VerySmallPositive, VerySmallIncrease},
-		{SmallPositive, SmallIncrease},
 		{MediumPositive, MediumIncrease},
 		{LargePositive, LargeIncrease},
 		{VeryLargePositive, VeryLargeIncrease},
@@ -182,18 +146,24 @@ func centroidDefuzzification(mx []float64, output []float64) float64 {
 }
 
 func Result(p ...float64) float64 {
-	goal, rate := p[0], p[1]
+	goal := p[0]
+	rate := p[1]
+
 	e := goal - rate
 
 	fuzzifiedSetError := fuzzyficationMsgSecInput(e)
+
 	log.Printf("goal: %v", goal)
+
 	log.Printf("Fuzzified Error: %v", fuzzifiedSetError)
 
+	// apply rules
 	mx, output := applyRules(fuzzifiedSetError)
-	//importanceFactors := []float64{1.5, 1.5, 1.0, 1.0, 0.5, 0.5, 0.3}
 
+	// Deffuzification
 	u := centroidDefuzzification(mx, output)
-	log.Printf("Fuzzy Controller: %.2f\n", u)
+
+	fmt.Printf("Fuzzy Controller: %.2f\n", u)
 	return u
 }
 
@@ -245,7 +215,7 @@ func main() {
 
 	messageReceived := make(chan bool)
 
-	file, err := os.OpenFile("message_rate_bell_11.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("message_rate_bell_7.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
