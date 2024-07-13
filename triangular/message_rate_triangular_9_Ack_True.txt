@@ -1,0 +1,16 @@
+2024-07-06 18:57:20 - Messages: 9376, Rate: 625.00 msg/sec, Prefetch: 1 - Prefetch valur adjust: 5 - Goal: 10000
+2024-07-06 18:57:35 - Messages: 54394, Rate: 3626.20 msg/sec, Prefetch: 6 - Prefetch valur adjust: 3 - Goal: 10000
+2024-07-06 18:57:50 - Messages: 81950, Rate: 5463.27 msg/sec, Prefetch: 9 - Prefetch valur adjust: 3 - Goal: 10000
+2024-07-06 18:58:05 - Messages: 100099, Rate: 6673.27 msg/sec, Prefetch: 12 - Prefetch valur adjust: 2 - Goal: 10000
+2024-07-06 18:58:20 - Messages: 113372, Rate: 7558.07 msg/sec, Prefetch: 14 - Prefetch valur adjust: 1 - Goal: 10000
+2024-07-06 18:58:35 - Messages: 117568, Rate: 7837.87 msg/sec, Prefetch: 15 - Prefetch valur adjust: 1 - Goal: 10000
+2024-07-06 18:58:50 - Messages: 128381, Rate: 8558.67 msg/sec, Prefetch: 16 - Prefetch valur adjust: 0 - Goal: 10000
+2024-07-06 18:59:05 - Messages: 117868, Rate: 7857.80 msg/sec, Prefetch: 16 - Prefetch valur adjust: 1 - Goal: 10000
+2024-07-06 18:59:20 - Messages: 133592, Rate: 8906.13 msg/sec, Prefetch: 17 - Prefetch valur adjust: 0 - Goal: 10000
+2024-07-06 18:59:35 - Messages: 126871, Rate: 8458.00 msg/sec, Prefetch: 17 - Prefetch valur adjust: 1 - Goal: 10000
+2024-07-06 18:59:50 - Messages: 127074, Rate: 8471.60 msg/sec, Prefetch: 18 - Prefetch valur adjust: 1 - Goal: 10000
+2024-07-06 19:00:05 - Messages: 131379, Rate: 8758.53 msg/sec, Prefetch: 19 - Prefetch valur adjust: 0 - Goal: 10000
+2024-07-06 19:00:20 - Messages: 144282, Rate: 9618.73 msg/sec, Prefetch: 19 - Prefetch valur adjust: 0 - Goal: 10000
+2024-07-06 19:00:35 - Messages: 137160, Rate: 9143.93 msg/sec, Prefetch: 19 - Prefetch valur adjust: 0 - Goal: 10000
+2024-07-06 19:00:50 - Messages: 144179, Rate: 9611.93 msg/sec, Prefetch: 19 - Prefetch valur adjust: 0 - Goal: 10000
+2024-07-06 19:01:05 - Messages: 129537, Rate: 8635.80 msg/sec, Prefetch: 19 - Prefetch valur adjust: 0 - Goal: 10000
