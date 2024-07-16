@@ -13,28 +13,9 @@ import (
 
 var (
 	messageCount int
-	//firstMessageTime time.Time
-	//lastMessageTime  time.Time
-
 )
 
 const (
-	/*LargeNegative  = "LN"
-	MediumNegative = "MN"
-	SmallNegative  = "SN"
-	Zero           = "ZE"
-	SmallPositive  = "SP"
-	MediumPositive = "MP"
-	LargePositive  = "LP"
-
-	LargeIncrease  = "LI"
-	MediumIncrease = "MI"
-	SmallIncrease  = "SI"
-	Maintain       = "MAINTAIN"
-	MediumDecrease = "MD"
-	SmallDecrease  = "SD"
-	LargeDecrease  = "LD"*/
-
 	VeryLargeNegative = "VLN"
 	LargeNegative     = "LN"
 	MediumNegative    = "MN"
@@ -74,17 +55,17 @@ func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
 
 	centers := map[string]struct{ a, b, c float64 }{
-		VeryLargeNegative: {4000, 2, -15000},
-		LargeNegative:     {3000, 2, -10000},
-		MediumNegative:    {2000, 2, -5000},
-		SmallNegative:     {1000, 2, -2500},
-		VerySmallNegative: {500, 2, -1250},
-		Zero:              {250, 2, 0},
-		VerySmallPositive: {500, 2, 1250},
-		SmallPositive:     {1000, 2, 2500},
-		MediumPositive:    {2000, 2, 5000},
-		LargePositive:     {3000, 2, 10000},
-		VeryLargePositive: {4000, 2, 15000},
+		VeryLargeNegative: {3000, 2, -10000},
+		LargeNegative:     {2000, 2, -5000},
+		MediumNegative:    {1000, 2, -2500},
+		SmallNegative:     {500, 2, -1250},
+		VerySmallNegative: {250, 2, -625},
+		Zero:              {125, 2, 0},
+		VerySmallPositive: {250, 2, 625},
+		SmallPositive:     {500, 2, 1250},
+		MediumPositive:    {1000, 2, 2500},
+		LargePositive:     {2000, 2, 5000},
+		VeryLargePositive: {4000, 2, 10000},
 	}
 
 	for label, params := range centers {
@@ -182,18 +163,24 @@ func centroidDefuzzification(mx []float64, output []float64) float64 {
 }
 
 func Result(p ...float64) float64 {
-	goal, rate := p[0], p[1]
+	goal := p[0]
+	rate := p[1]
+
 	e := goal - rate
 
 	fuzzifiedSetError := fuzzyficationMsgSecInput(e)
+
 	log.Printf("goal: %v", goal)
+
 	log.Printf("Fuzzified Error: %v", fuzzifiedSetError)
 
+	// apply rules
 	mx, output := applyRules(fuzzifiedSetError)
-	//importanceFactors := []float64{1.5, 1.5, 1.0, 1.0, 0.5, 0.5, 0.3}
 
+	// Deffuzification
 	u := centroidDefuzzification(mx, output)
-	log.Printf("Fuzzy Controller: %.2f\n", u)
+
+	fmt.Printf("Fuzzy Controller: %.2f\n", u)
 	return u
 }
 
