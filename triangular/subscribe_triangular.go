@@ -44,12 +44,11 @@ func triangularMF(x float64, a float64, b float64, c float64) float64 {
 func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
 
-	// Define the overlaps and categories in the range -15000 to 15000
-	fuzzy["VeryLow"] = triangularMF(msgSec, -15000, -12000, -6000) // Start of the range to -6000
-	fuzzy["Low"] = triangularMF(msgSec, -9000, -4500, 0)           // Overlapping midpoint at -4500
-	fuzzy["Medium"] = triangularMF(msgSec, -3000, 0, 3000)         // Center at 0
-	fuzzy["High"] = triangularMF(msgSec, 0, 4500, 9000)            // Overlapping midpoint at 4500
-	fuzzy["VeryHigh"] = triangularMF(msgSec, 6000, 12000, 15000)   // End of the range starting from 9000
+	fuzzy[VeryLow] = triangularMF(msgSec, -10000, -5000, -2500)
+	fuzzy[Low] = triangularMF(msgSec, -5000, -2500, -1250)
+	fuzzy[Medium] = triangularMF(msgSec, -1250, 0, 1250)
+	fuzzy[High] = triangularMF(msgSec, 1250, 2500, 5000)
+	fuzzy[VeryHigh] = triangularMF(msgSec, 2500, 5000, 10000)
 
 	return fuzzy
 }
@@ -57,12 +56,11 @@ func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 func fuzzyficationOutput(n float64) map[string]float64 {
 	r := map[string]float64{}
 
-	// Adjusted categories with appropriate overlaps within the range of -8 to 8
-	r["VeryNegativeDecrease"] = triangularMF(n, -8, -6, -4) // Very Low Decrease
-	r["NegativeDecrease"] = triangularMF(n, -6, -3.5, -1)   // Low Decrease
-	r["Maintain"] = triangularMF(n, -3, 0, 3)               // Maintain
-	r["PositiveIncrease"] = triangularMF(n, 1, 3.5, 6)      // Small Increase
-	r["VeryPositiveIncrease"] = triangularMF(n, 4, 6, 8)    // Very Large Increase
+	r[VeryNegativeDecrease] = triangularMF(n, -8, -7, -6)
+	r[NegativeDecrease] = triangularMF(n, -7, -6, -4)
+	r[Maintain] = triangularMF(n, -4, 0, 4)
+	r[PositiveIncrease] = triangularMF(n, 4, 6, 7)
+	r[VeryPositiveIncrease] = triangularMF(n, 6, 7, 8)
 
 	return r
 }
@@ -199,7 +197,7 @@ func main() {
 
 	messageReceived := make(chan bool)
 
-	file, err := os.OpenFile("message_rate_triangular_5.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("message_rate_triangular_5_1.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
