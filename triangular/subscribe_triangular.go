@@ -13,18 +13,16 @@ import (
 
 var (
 	messageCount = 0
-	//firstMessageTime = time.Now().Truncate(time.Second)
-	//lastMessageTime  = time.Now().Truncate(time.Second)
 )
 
 const (
-	High   = "High"
-	Medium = "Medium"
-	Low    = "Low"
+	Negative = "Negative"
+	Zero     = "Zero"
+	Positive = "Positive"
 
-	LowDecrease   = "LD"
-	MediumMantain = "MZ"
-	HighIncrease  = "HI"
+	Decrease = "Decrease"
+	Mantain  = "Mantain"
+	Increase = "Increase"
 )
 
 func failOnError(err error, msg string) {
@@ -40,11 +38,9 @@ func triangularMF(x float64, a float64, b float64, c float64) float64 {
 func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
 
-	// Define as três categorias com sobreposição de 50%
-	// Considerando o intervalo de -15000 a 15000 para msgSec
-	fuzzy["Low"] = triangularMF(msgSec, -15000, -15000, 0) // De -15000 a 0
-	fuzzy["Medium"] = triangularMF(msgSec, -7500, 0, 7500) // De -7500 a 7500, com sobreposição de 50%
-	fuzzy["High"] = triangularMF(msgSec, 0, 15000, 15000)  // De 0 a 15000
+	fuzzy[Negative] = triangularMF(msgSec, -10000, -5000, 0)
+	fuzzy[Zero] = triangularMF(msgSec, -1000, 0, 1000)
+	fuzzy[Positive] = triangularMF(msgSec, 0, 5000, 10000)
 
 	return fuzzy
 }
@@ -52,10 +48,9 @@ func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 func fuzzyficationOutput(n float64) map[string]float64 {
 	r := make(map[string]float64)
 
-	// Define as três categorias com sobreposição de 50% no intervalo de -8 a 8
-	r["LD"] = triangularMF(n, -8, -8, 0) // De -8 a 0
-	r["MZ"] = triangularMF(n, -4, 0, 4)  // De -4 a 4, com sobreposição de 50%
-	r["HI"] = triangularMF(n, 0, 8, 8)   // De 0 a 8
+	r[Decrease] = triangularMF(n, -8, -8, 0)
+	r[Mantain] = triangularMF(n, -4, 0, 4)
+	r[Increase] = triangularMF(n, 0, 8, 8)
 
 	return r
 }
@@ -68,9 +63,9 @@ func applyRules(e map[string]float64) ([]float64, []float64) {
 		Condition string
 		Result    string
 	}{
-		{Low, LowDecrease},
-		{Medium, MediumMantain},
-		{High, HighIncrease},
+		{Negative, Decrease},
+		{Zero, Mantain},
+		{Positive, Increase},
 	}
 
 	for _, rule := range rules {
@@ -95,22 +90,6 @@ func getMaxOutput(s string) float64 {
 	}
 	return r
 }
-
-/*func centroidDefuzzification(mx, output []float64) float64 {
-	numerator, denominator := 0.0, 0.0
-
-	for i, m := range mx {
-		adjustedOutput := output[i] * m
-		numerator += adjustedOutput
-		denominator += m // Adjust by importance factors
-	}
-
-	if denominator == 0 {
-		log.Println("Warning: Denominator is zero, defaulting output to 0")
-		return 0
-	}
-	return numerator / denominator
-}*/
 
 func centroidDefuzzification(mx []float64, output []float64) float64 {
 	if len(mx) != len(output) {
@@ -148,10 +127,6 @@ func Result(p ...float64) float64 {
 	mx, output := applyRules(fuzzifiedSetError)
 
 	// Deffuzification
-	//importanceFactors := []float64{1.5, 1.5, 1.0, 1.0, 0.5, 0.5, 0.3}
-
-	fmt.Printf("mx: %v\n", mx)
-	fmt.Printf("output: %v\n", output)
 	u := centroidDefuzzification(mx, output)
 
 	fmt.Printf("Fuzzy Controller: %.2f\n", u)
@@ -206,7 +181,7 @@ func main() {
 
 	messageReceived := make(chan bool)
 
-	file, err := os.OpenFile("message_rate_triangular_3.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("message_rate_triangular_3_1.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -238,11 +213,11 @@ func main() {
 					if _, err := file.WriteString(time.Now().Format("2006-01-02 15:04:05") + " - Messages: " + strconv.Itoa(messageCount) + ", Rate: " + fmt.Sprintf("%.2f", rate) + " msg/sec, Prefetch: " + strconv.Itoa(prefetchValue) + " - " + "Prefetch valur adjust: " + strconv.Itoa(int(rateAdjust)) + " - " + "Goal: " + strconv.Itoa(gols) + "\n"); err != nil {
 						log.Fatal(err)
 					}
-					//int(rateAdjust)
+
 					prefetchValue += int(rateAdjust)
 					log.Printf("Messages processed in the last 10 seconds: %d", messageCount)
 					log.Printf("Current prefetch value: %d", prefetchValue)
-					// Escrever no arquivo
+
 					messageCount = 0
 					err = ch.Qos(prefetchValue, 0, true)
 					failOnError(err, "Failed to set QoS")
