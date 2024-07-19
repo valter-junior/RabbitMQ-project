@@ -48,14 +48,13 @@ func triangularMF(x float64, a float64, b float64, c float64) float64 {
 func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
 
-	// Define the overlaps and categories in the range -15000 to 15000
-	fuzzy["VLN"] = triangularMF(msgSec, -15000, -15000, -10000) // From start to -10000
-	fuzzy["LN"] = triangularMF(msgSec, -12000, -10000, -5000)   // Overlapping midpoint at -10000
-	fuzzy["MN"] = triangularMF(msgSec, -7500, -5000, 0)         // Overlapping midpoint at -5000
-	fuzzy["ZE"] = triangularMF(msgSec, -2500, 0, 2500)          // Center at 0
-	fuzzy["MP"] = triangularMF(msgSec, 0, 5000, 7500)           // Overlapping midpoint at 5000
-	fuzzy["LP"] = triangularMF(msgSec, 5000, 7500, 12000)       // Overlapping midpoint at 7500
-	fuzzy["VLP"] = triangularMF(msgSec, 10000, 12000, 15000)    // End of the range starting from 12000
+	fuzzy[VeryLargeNegative] = triangularMF(msgSec, -10000, -10000, -5000)
+	fuzzy[LargeNegative] = triangularMF(msgSec, -7000, -5000, -2500)
+	fuzzy[MediumNegative] = triangularMF(msgSec, -5000, -2500, 0)
+	fuzzy[Zero] = triangularMF(msgSec, -1250, 0, 1250)
+	fuzzy[MediumPositive] = triangularMF(msgSec, 0, 2500, 5000)
+	fuzzy[LargePositive] = triangularMF(msgSec, 2500, 5000, 7000)
+	fuzzy[VeryLargePositive] = triangularMF(msgSec, 5000, 10000, 10000)
 
 	return fuzzy
 }
@@ -63,14 +62,13 @@ func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 func fuzzyficationOutput(n float64) map[string]float64 {
 	r := make(map[string]float64)
 
-	// Categorias ajustadas para cobrir o intervalo de -8 a 8 com sobreposições adequadas
-	r["VLD"] = triangularMF(n, -8, -6.5, -5)      // Very Low Decrease
-	r["LD"] = triangularMF(n, -5.5, -4, -2.5)     // Low Decrease
-	r["MD"] = triangularMF(n, -3, -1.5, 0)        // Moderate Decrease
-	r["MAINTAIN"] = triangularMF(n, -0.5, 0, 0.5) // Maintain current rate
-	r["MI"] = triangularMF(n, 0, 1.5, 3)          // Moderate Increase
-	r["LI"] = triangularMF(n, 2.5, 4, 5.5)        // Large Increase
-	r["VLI"] = triangularMF(n, 5, 6.5, 8)         // Very Large Increase
+	r[VeryLargeDecrease] = triangularMF(n, -8, -7, -6)
+	r[LargeDecrease] = triangularMF(n, -7, -6, -5)
+	r[MediumDecrease] = triangularMF(n, -6, -5, 0)
+	r[Maintain] = triangularMF(n, -2, 0, 2)
+	r[MediumIncrease] = triangularMF(n, 0, 5, 6)
+	r[LargeIncrease] = triangularMF(n, 5, 6, 7)
+	r[VeryLargeIncrease] = triangularMF(n, 6, 7, 8)
 
 	return r
 }
@@ -209,7 +207,7 @@ func main() {
 
 	messageReceived := make(chan bool)
 
-	file, err := os.OpenFile("message_rate_triangular_7.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("message_rate_triangular_7_1.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
