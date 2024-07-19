@@ -13,8 +13,6 @@ import (
 
 var (
 	messageCount = 0
-	//firstMessageTime = time.Now().Truncate(time.Second)
-	//lastMessageTime  = time.Now().Truncate(time.Second)
 )
 
 const (
@@ -52,16 +50,15 @@ func triangularMF(x float64, a float64, b float64, c float64) float64 {
 func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
 
-	// Define the overlaps and categories in the range -15000 to 15000
-	fuzzy["VLN"] = triangularMF(msgSec, -15000, -15000, -11000) // Very Low Negative, more balanced start
-	fuzzy["LN"] = triangularMF(msgSec, -12000, -11000, -7000)   // Low Negative, adjusted for better overlap
-	fuzzy["MN"] = triangularMF(msgSec, -9000, -7000, -3000)     // Medium Negative, wider to balance coverage
-	fuzzy["SN"] = triangularMF(msgSec, -5000, -3000, -1000)     // Small Negative, shifted for smoother transition
-	fuzzy["ZE"] = triangularMF(msgSec, -2000, 0, 2000)          // Zero, narrower to focus around zero
-	fuzzy["SP"] = triangularMF(msgSec, 1000, 3000, 5000)        // Small Positive, better alignment with 'ZE'
-	fuzzy["MP"] = triangularMF(msgSec, 3000, 5000, 9000)        // Medium Positive, extended for coverage
-	fuzzy["LP"] = triangularMF(msgSec, 7000, 9000, 11000)       // Large Positive, adjusted for balance
-	fuzzy["VLP"] = triangularMF(msgSec, 11000, 15000, 15000)    // Very Large Positive, more balanced end
+	fuzzy[VeryLargeNegative] = triangularMF(msgSec, -10000, -10000, -8000)
+	fuzzy[LargeNegative] = triangularMF(msgSec, -9000, -8000, -5000)
+	fuzzy[MediumNegative] = triangularMF(msgSec, -6000, -5000, -2000)
+	fuzzy[SmallNegative] = triangularMF(msgSec, -3000, -2000, 0)
+	fuzzy[Zero] = triangularMF(msgSec, -1000, 0, 1000)
+	fuzzy[SmallPositive] = triangularMF(msgSec, 0, 2000, 3000)
+	fuzzy[MediumPositive] = triangularMF(msgSec, 2000, 5000, 6000)
+	fuzzy[LargePositive] = triangularMF(msgSec, 5000, 8000, 9000)
+	fuzzy[VeryLargePositive] = triangularMF(msgSec, 8000, 10000, 10000)
 
 	return fuzzy
 }
@@ -69,16 +66,15 @@ func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 func fuzzyficationOutput(n float64) map[string]float64 {
 	r := make(map[string]float64)
 
-	// Adjust the categories to fit the range of -8 to 8 with 9 categories
-	r["VLD"] = triangularMF(n, -8, -8, -6)    // Very Low Decrease
-	r["LD"] = triangularMF(n, -7, -6, -4)     // Low Decrease
-	r["MD"] = triangularMF(n, -6, -4, -2)     // Medium Decrease
-	r["SD"] = triangularMF(n, -4, -2, 0)      // Small Decrease
-	r["MAINTAIN"] = triangularMF(n, -1, 0, 1) // Maintain
-	r["SI"] = triangularMF(n, 0, 2, 4)        // Small Increase
-	r["MI"] = triangularMF(n, 2, 4, 6)        // Medium Increase
-	r["LI"] = triangularMF(n, 4, 6, 8)        // Large Increase
-	r["VLI"] = triangularMF(n, 6, 8, 8)       // Very Large Increase
+	r[VeryLargeDecrease] = triangularMF(n, -8, -8, -6)
+	r[LargeDecrease] = triangularMF(n, -7, -6, -4)
+	r[MediumDecrease] = triangularMF(n, -6, -4, -2)
+	r[SmallDecrease] = triangularMF(n, -4, -2, 0)
+	r[Maintain] = triangularMF(n, -1, 0, 1)
+	r[SmallIncrease] = triangularMF(n, 0, 2, 4)
+	r[MediumIncrease] = triangularMF(n, 2, 4, 6)
+	r[LargeIncrease] = triangularMF(n, 4, 6, 8)
+	r[VeryLargeIncrease] = triangularMF(n, 6, 8, 8)
 
 	return r
 }
@@ -215,7 +211,7 @@ func main() {
 
 	messageReceived := make(chan bool)
 
-	file, err := os.OpenFile("message_rate_triangular_9_Ack_True.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile("message_rate_triangular_9_1.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
