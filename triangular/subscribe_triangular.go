@@ -48,26 +48,26 @@ func triangularMF(x float64, a float64, b float64, c float64) float64 {
 func fuzzyficationMsgSecInput(msgSec float64) map[string]float64 {
 	fuzzy := make(map[string]float64)
 
-	fuzzy[VeryLargeNegative] = triangularMF(msgSec, -10000, -10000, -5000)
-	fuzzy[LargeNegative] = triangularMF(msgSec, -7000, -5000, -2500)
-	fuzzy[MediumNegative] = triangularMF(msgSec, -5000, -2500, 0)
-	fuzzy[Zero] = triangularMF(msgSec, -1250, 0, 1250)
-	fuzzy[MediumPositive] = triangularMF(msgSec, 0, 2500, 5000)
-	fuzzy[LargePositive] = triangularMF(msgSec, 2500, 5000, 7000)
-	fuzzy[VeryLargePositive] = triangularMF(msgSec, 5000, 10000, 10000)
+	fuzzy[VeryLargeNegative] = triangularMF(msgSec, -10000, -5000, -2500)
+	fuzzy[LargeNegative] = triangularMF(msgSec, -5000, -2500, -1250)
+	fuzzy[MediumNegative] = triangularMF(msgSec, -2500, -1250, -625)
+	fuzzy[Zero] = triangularMF(msgSec, -625, 0, 625)
+	fuzzy[MediumPositive] = triangularMF(msgSec, 625, 1250, 2500)
+	fuzzy[LargePositive] = triangularMF(msgSec, 1250, 2500, 5000)
+	fuzzy[VeryLargePositive] = triangularMF(msgSec, 2500, 5000, 10000)
 
 	return fuzzy
 }
 
 func fuzzyficationOutput(n float64) map[string]float64 {
-	r := make(map[string]float64)
+	r := map[string]float64{}
 
 	r[VeryLargeDecrease] = triangularMF(n, -8, -7, -6)
-	r[LargeDecrease] = triangularMF(n, -7, -6, -5)
-	r[MediumDecrease] = triangularMF(n, -6, -5, 0)
+	r[LargeDecrease] = triangularMF(n, -7, -6, -4)
+	r[MediumDecrease] = triangularMF(n, -6, -4, -2)
 	r[Maintain] = triangularMF(n, -2, 0, 2)
-	r[MediumIncrease] = triangularMF(n, 0, 5, 6)
-	r[LargeIncrease] = triangularMF(n, 5, 6, 7)
+	r[MediumIncrease] = triangularMF(n, 2, 4, 6)
+	r[LargeIncrease] = triangularMF(n, 4, 6, 7)
 	r[VeryLargeIncrease] = triangularMF(n, 6, 7, 8)
 
 	return r
